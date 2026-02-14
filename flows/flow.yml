@@ -18,6 +18,8 @@ definition:
         - "get_job_logs"
         - "list_repository_tree"
         - "get_repository_file"
+        - "read_file"
+        - "read_files"
       ui_log_events:
         - on_agent_final_answer
         - on_tool_execution_success
@@ -135,7 +137,7 @@ definition:
           Use GitLab tools to create a branch, commit the file, and open a merge request.
           Include a detailed description with changes, before/after metrics, DAG summary, and review checklist.
           Post a carbon dashboard comment on the MR with per-job emissions.
-          Apply labels: ecoci, ci-optimization, carbon-reduction, pipeline-optimization.
+          Apply labels: ecoci, ci-optimization, carbon-reduction.
         user: |
           Pipeline analysis:
           {{pipeline_analyzer}}
