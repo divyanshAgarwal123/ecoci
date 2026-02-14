@@ -76,6 +76,25 @@
         "synced_at": "2026-02-14T12:45:47.923Z",
         "definition_hash": "2eb536791d656aca"
       }
+    },
+    "agents/agent.yml": {
+      "catalog_id": "gid://gitlab/Ai::Catalog::Item/1003279",
+      "name": "EcoCI Pipeline Optimizer",
+      "created_at": "2026-02-14T12:57:21.043Z",
+      "item_consumers": {
+        "group": {
+          "id": "gid://gitlab/Ai::Catalog::ItemConsumer/4134503"
+        },
+        "project": {
+          "id": "gid://gitlab/Ai::Catalog::ItemConsumer/4134504"
+        }
+      },
+      "latest_sync": {
+        "git_tag": "v0.1.0",
+        "catalog_version": "1.0.0",
+        "synced_at": "2026-02-14T12:57:21.043Z",
+        "definition_hash": "03c939d041f91eae"
+      }
     }
   },
   "flows": {
@@ -96,6 +115,25 @@
         "catalog_version": "1.0.0",
         "synced_at": "2026-02-14T12:45:49.018Z",
         "definition_hash": "395aacffd449e007"
+      }
+    },
+    "flows/flow.yml": {
+      "catalog_id": "gid://gitlab/Ai::Catalog::Item/1003280",
+      "name": "EcoCI Flow",
+      "created_at": "2026-02-14T12:57:22.418Z",
+      "item_consumers": {
+        "group": {
+          "id": "gid://gitlab/Ai::Catalog::ItemConsumer/4134505"
+        },
+        "project": {
+          "id": "gid://gitlab/Ai::Catalog::ItemConsumer/4134506"
+        }
+      },
+      "latest_sync": {
+        "git_tag": "v0.1.0",
+        "catalog_version": "1.0.0",
+        "synced_at": "2026-02-14T12:57:22.418Z",
+        "definition_hash": "4bfb4bd7e88f923c"
       }
     }
   }
