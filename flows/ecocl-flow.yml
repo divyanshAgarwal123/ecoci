@@ -1,0 +1,166 @@
+name: "EcoCI Flow"
+description: "Multi-agent flow that analyzes GitLab CI/CD pipelines, estimates carbon emissions, generates optimizations, and creates a merge request."
+public: true
+definition:
+  version: v1
+  environment: ambient
+
+  components:
+    - name: pipeline_analyzer
+      type: AgentComponent
+      prompt_id: pipeline_analyzer_prompt
+      inputs:
+        - "context:goal"
+      toolset:
+        - "get_project"
+        - "get_pipeline_failing_jobs"
+        - "get_pipeline_errors"
+        - "get_job_logs"
+        - "list_repository_tree"
+        - "get_repository_file"
+      ui_log_events:
+        - on_agent_final_answer
+        - on_tool_execution_success
+
+    - name: carbon_calculator
+      type: AgentComponent
+      prompt_id: carbon_calculator_prompt
+      inputs:
+        - "context:goal"
+        - "context:pipeline_analyzer"
+      toolset:
+        - "get_pipeline_failing_jobs"
+        - "get_job_logs"
+      ui_log_events:
+        - on_agent_final_answer
+        - on_tool_execution_success
+
+    - name: optimization_engine
+      type: AgentComponent
+      prompt_id: optimization_engine_prompt
+      inputs:
+        - "context:goal"
+        - "context:pipeline_analyzer"
+        - "context:carbon_calculator"
+      toolset:
+        - "get_repository_file"
+        - "list_repository_tree"
+        - "read_file"
+        - "read_files"
+      ui_log_events:
+        - on_agent_final_answer
+        - on_tool_execution_success
+
+    - name: mr_creator
+      type: AgentComponent
+      prompt_id: mr_creator_prompt
+      inputs:
+        - "context:goal"
+        - "context:pipeline_analyzer"
+        - "context:carbon_calculator"
+        - "context:optimization_engine"
+      toolset:
+        - "create_commit"
+        - "create_merge_request"
+        - "create_merge_request_note"
+        - "get_project"
+        - "get_current_user"
+        - "get_repository_file"
+      ui_log_events:
+        - on_agent_final_answer
+        - on_tool_execution_success
+
+  prompts:
+    - prompt_id: pipeline_analyzer_prompt
+      name: "Pipeline Analyzer"
+      prompt_template:
+        system: |
+          You are the EcoCI Pipeline Analyzer. Analyze the .gitlab-ci.yml and pipeline data to find inefficiencies.
+          Focus on: missing cache, lack of parallelization, oversized images, wrong runner tags, unnecessary jobs on non-code changes.
+          Also analyze the needs: dependency graph for cycles, critical path depth, and parallelism ratio.
+          Use GitLab tools to fetch .gitlab-ci.yml, pipeline jobs, and job logs.
+          Output a structured JSON with: issues[], recommendations[], impacted_jobs[], dag_summary{}, confidence.
+        user: |
+          {{goal}}
+        placeholder: history
+      unit_primitives: []
+      params:
+        timeout: 180
+
+    - prompt_id: carbon_calculator_prompt
+      name: "Carbon Calculator"
+      prompt_template:
+        system: |
+          You are the EcoCI Carbon Calculator. Compute estimated energy usage and CO2 emissions per job and overall.
+          Formula: energy_kwh = (job_duration_seconds / 3600) * runner_cpu_cores * kwh_per_core_hour
+          Then: co2_kg = energy_kwh * carbon_intensity_kg_per_kwh
+          Defaults: runner_cpu_cores=2, kwh_per_core_hour=0.5, carbon_intensity=0.475
+          Return JSON with total_kwh, total_co2_kg, by_job[], assumptions, human_readable sentence.
+        user: |
+          Based on the pipeline analysis:
+          {{pipeline_analyzer}}
+
+          {{goal}}
+        placeholder: history
+      unit_primitives: []
+      params:
+        timeout: 180
+
+    - prompt_id: optimization_engine_prompt
+      name: "Optimization Engine"
+      prompt_template:
+        system: |
+          You are the EcoCI Optimization Engine. Produce an optimized .gitlab-ci.yml based on the analysis and carbon data.
+          Strategies: add caching, pin slim images, add needs: for parallelism, add rules:changes, suggest runner tags.
+          Never remove jobs. Preserve intent. Keep changes minimal and safe.
+          Return JSON with: optimized_yaml (full YAML string), changes[] (what changed), warnings[] (review items).
+        user: |
+          Pipeline analysis:
+          {{pipeline_analyzer}}
+
+          Carbon data:
+          {{carbon_calculator}}
+
+          {{goal}}
+        placeholder: history
+      unit_primitives: []
+      params:
+        timeout: 180
+
+    - prompt_id: mr_creator_prompt
+      name: "MR Creator"
+      prompt_template:
+        system: |
+          You are the EcoCI MR Creator. Create a merge request with the optimized .gitlab-ci.yml.
+          Use GitLab tools to create a branch, commit the file, and open a merge request.
+          Include a detailed description with changes, before/after metrics, DAG summary, and review checklist.
+          Post a carbon dashboard comment on the MR with per-job emissions.
+          Apply labels: ecoci, ci-optimization, carbon-reduction, pipeline-optimization.
+        user: |
+          Pipeline analysis:
+          {{pipeline_analyzer}}
+
+          Carbon data:
+          {{carbon_calculator}}
+
+          Optimization output:
+          {{optimization_engine}}
+
+          {{goal}}
+        placeholder: history
+      unit_primitives: []
+      params:
+        timeout: 180
+
+  routers:
+    - from: pipeline_analyzer
+      to: carbon_calculator
+    - from: carbon_calculator
+      to: optimization_engine
+    - from: optimization_engine
+      to: mr_creator
+    - from: mr_creator
+      to: end
+
+  flow:
+    entry_point: pipeline_analyzer

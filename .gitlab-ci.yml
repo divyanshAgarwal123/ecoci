@@ -1,84 +1,29 @@
 # ──────────────────────────────────────────────────────────────
 # EcoCI – GitLab CI/CD configuration
 # ──────────────────────────────────────────────────────────────
-# This pipeline validates the agent/flow YAML and runs the
-# EcoCI optimizer on demand via a downstream trigger.
+# Adds the EcoCI optimizer job alongside the hackathon's
+# built-in validate-items pipeline.
 # ──────────────────────────────────────────────────────────────
-
-stages:
-  - validate
-  - ecoci_run
-
-# ───── Global defaults ────────────────────────────────────────
-default:
-  image: python:3.12-slim
-  cache:
-    key: "$CI_COMMIT_REF_SLUG"
-    paths:
-      - .cache/pip
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  # Set these in Settings → CI/CD → Variables (masked + protected)
-  # GITLAB_TOKEN: <project-access-token>
-  # ECOCI_TRIGGER_TOKEN: <pipeline-trigger-token>
   GITLAB_BASE_URL: "https://gitlab.com"
   CARBON_INTENSITY_KG_PER_KWH: "0.475"
   DEFAULT_RUNNER_CPU_CORES: "2"
   KWH_PER_CORE_HOUR: "0.5"
 
-# ───── Stage: validate ────────────────────────────────────────
-validate_yaml:
-  stage: validate
-  script:
-    - pip install pyyaml --quiet
-    - python -c "
-        import yaml, sys, pathlib;
-        ok = True;
-        for p in pathlib.Path('.gitlab/agents').glob('*.yml'):
-          try:
-            yaml.safe_load(p.read_text());
-            print(f'✅ {p}');
-          except Exception as e:
-            print(f'❌ {p} — {e}');
-            ok = False;
-        for p in pathlib.Path('agents').glob('*.yml'):
-          try:
-            yaml.safe_load(p.read_text());
-            print(f'✅ {p}');
-          except Exception as e:
-            print(f'❌ {p} — {e}');
-            ok = False;
-        for p in pathlib.Path('flows').glob('*.yml'):
-          try:
-            yaml.safe_load(p.read_text());
-            print(f'✅ {p}');
-          except Exception as e:
-            print(f'❌ {p} — {e}');
-            ok = False;
-        sys.exit(0 if ok else 1)
-      "
-  rules:
-    - changes:
-        - ".gitlab/agents/**/*.yml"
-        - "agents/**/*.yml"
-        - "flows/**/*.yml"
-    - when: always
-
-# ───── Stage: ecoci_run ───────────────────────────────────────
-# This job runs the EcoCI optimizer against a completed pipeline.
-# Trigger it one of three ways:
-#   1. Downstream pipeline trigger (webhook → API trigger)
-#   2. Manually via "Run pipeline" with variables
-#   3. Automatically via the child pipeline trigger below
-#
-# Required variables (pass via trigger or manual run):
+# ───── EcoCI runner job ───────────────────────────────────────
+# Trigger manually via CI/CD > Run pipeline with variables:
 #   ECOCI_PROJECT_ID  – numeric project ID to analyze
 #   ECOCI_PIPELINE_ID – numeric pipeline ID that completed
 #   ECOCI_REF         – branch/tag ref of the completed pipeline
 ecoci_runner:
-  stage: ecoci_run
+  stage: test
   image: python:3.12-slim
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - .cache/pip
   before_script:
     - pip install -r requirements.txt --quiet
   script:
@@ -88,19 +33,7 @@ ecoci_runner:
         --pipeline-id "$ECOCI_PIPELINE_ID"
         --ref "$ECOCI_REF"
   rules:
-    # Run when triggered with the required variables
     - if: '$ECOCI_PROJECT_ID && $ECOCI_PIPELINE_ID && $ECOCI_REF'
       when: always
-    # Allow manual runs from the UI
     - when: manual
       allow_failure: true
-  variables:
-    ECOCI_PROJECT_ID: ""
-    ECOCI_PIPELINE_ID: ""
-    ECOCI_REF: ""
-
-# ───── Downstream trigger endpoint ───────────────────────────
-# Use this as a child pipeline or trigger it via webhook.
-# The webhook script (scripts/ecoci/webhook_trigger.py) calls
-# the GitLab Pipeline Triggers API to start a pipeline with
-# the three ECOCI_* variables populated from the webhook payload.
