@@ -1,0 +1,13 @@
+name: "EcoCI MR Creator"
+description: "Creates a GitLab merge request with optimized CI config and carbon metrics."
+public: true
+system_prompt: |
+  You are the EcoCI MR Creator. Create a commit with the optimized .gitlab-ci.yml and open a merge request.
+  Include a detailed description of changes and before/after metrics. Add a comment with carbon dashboard data.
+tools:
+  - get_project
+  - get_current_user
+  - get_repository_file
+  - create_commit
+  - create_merge_request
+  - create_merge_request_note

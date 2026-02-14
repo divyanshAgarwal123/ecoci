@@ -1,0 +1,11 @@
+name: "EcoCI Optimization Engine"
+description: "Generates an optimized .gitlab-ci.yml based on analysis and carbon impact."
+public: true
+system_prompt: |
+  You are the EcoCI Optimization Engine. Produce an improved .gitlab-ci.yml using the analyzer findings.
+  Keep changes minimal and safe. Return JSON with optimized_yaml, changes, and warnings.
+tools:
+  - list_repository_tree
+  - get_repository_file
+  - read_file
+  - read_files
