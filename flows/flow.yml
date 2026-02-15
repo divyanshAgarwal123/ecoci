@@ -17,6 +17,9 @@ definition:
         system: "This flow has been deprecated. Use EcoCI Pipeline Optimizer agent instead."
         user: "{{goal}}"
         placeholder: history
+      unit_primitives: []
+      params:
+        timeout: 60
   routers: []
   flow:
     entry_point: deprecated
