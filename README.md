@@ -1,246 +1,115 @@
-# EcoCI - GitLab AI Hackathon
+# EcoCI — Autonomous CI/CD Carbon Optimizer
 
-EcoCI is a multi-agent GitLab Duo flow that optimizes GitLab CI/CD pipelines to be faster, cheaper, and lower-carbon.
-It triggers on pipeline completion, analyzes `.gitlab-ci.yml`, estimates carbon emissions, proposes improvements, and
-creates a merge request with a clear before/after summary.
+> **GitLab AI Hackathon 2026** — Built on GitLab Duo Agent Platform
 
----
+EcoCI is an autonomous agent that **fetches real pipeline data**, **calculates actual carbon emissions** from job durations, **generates an optimized `.gitlab-ci.yml`**, and **creates a merge request** — all without human intervention.
 
-## Table of contents
-
-1. [What is included](#what-is-included)
-2. [Key features](#key-features)
-3. [One-time project setup](#one-time-project-setup)
-4. [Pipeline trigger configuration](#pipeline-trigger-configuration)
-5. [How EcoCI runs end-to-end](#how-ecoci-runs-end-to-end)
-6. [Local / manual testing](#local--manual-testing)
-7. [MR template and labels](#mr-template-and-labels)
-8. [Demo storyline](#demo-storyline)
+**Unlike a basic chatbot**, EcoCI uses GitLab tools to pull live data (`get_pipeline_failing_jobs`, `get_job_logs`) and take real action (`create_commit`, `create_merge_request`).
 
 ---
 
-## What is included
+## What makes this different from asking ChatGPT?
+
+| | ChatGPT / Claude | EcoCI Agent |
+|---|---|---|
+| Data source | You paste YAML | Fetches live pipeline data via GitLab API |
+| Metrics | Guesses durations | Uses **actual** job durations from `get_pipeline_failing_jobs` |
+| Log analysis | Can't see logs | Reads real `get_job_logs` to find slow steps |
+| Carbon math | Estimates | Calculates from real `duration × cores × grid_intensity` |
+| Action | Gives suggestions | **Creates branch, commits, opens MR** autonomously |
+| Follow-up | None | Posts carbon dashboard comment on the MR |
+
+---
+
+## How it works
 
 ```
-.gitlab-ci.yml                           # CI pipeline: validate + ecoci_runner job
+User: "Optimize the pipeline for this project"
+  │
+  ├─ Agent calls get_project ──────────── gets project metadata
+  ├─ Agent calls get_repository_file ──── fetches .gitlab-ci.yml
+  ├─ Agent calls get_pipeline_failing_jobs ── gets REAL job durations
+  ├─ Agent calls get_job_logs ─────────── reads logs for slow jobs
+  │
+  ├─ Calculates CO₂ from actual durations
+  ├─ Identifies: missing cache, sequential jobs, heavy images
+  │
+  ├─ Agent calls create_commit ────────── creates branch + optimized YAML
+  ├─ Agent calls create_merge_request ─── opens MR with metrics
+  └─ Agent calls create_merge_request_note ── posts carbon dashboard
+```
+
+**Result**: A merge request appears with the optimized config, real before/after metrics, and a carbon impact summary.
+
+---
+
+## Project structure
+
+```
+agents/
+  agent.yml              # EcoCI agent definition (Duo Agent Platform)
+flows/
+  flow.yml               # Multi-step flow: analyze → carbon → optimize → MR
 .gitlab/
-  agents/
-    ecocl-flow.yml                       # Duo multi-agent flow (4 agents)
-    pipeline-analyzer.yml                # Agent 1 - analyse CI config
-    carbon-calculator.yml                # Agent 2 - estimate emissions
-    optimizer.yml                        # Agent 3 - generate improved YAML
-    mr-creator.yml                       # Agent 4 - create MR
   merge_request_templates/
-    ecoci_optimization.md                # Standardised MR template
+    ecoci_optimization.md  # MR template with carbon checklist
 scripts/
   ecoci/
-    __init__.py
-    main.py                              # CLI entry point
-    config.py                            # Environment-based config
-    gitlab_client.py                     # GitLab REST API wrapper
-    ci_analyzer.py                       # Inefficiency + DAG + tag analysis
-    carbon_calculator.py                 # Energy and CO2 estimation
-    optimizer.py                         # YAML rewriter
-    mr_creator.py                        # MR creation with labels and template
-    webhook_trigger.py                   # Pipeline Trigger API helper
-requirements.txt
+    main.py              # CLI entry point (alternative trigger via CI job)
+    config.py            # Environment-based configuration
+    gitlab_client.py     # GitLab REST API wrapper
+    ci_analyzer.py       # Pipeline analysis with DAG inspection
+    carbon_calculator.py # Energy and CO₂ estimation
+    optimizer.py         # YAML rewriter
+    mr_creator.py        # Branch + commit + MR creation
+    webhook_trigger.py   # Pipeline Trigger API helper
+.gitlab-ci.yml           # CI job for webhook/manual trigger
+requirements.txt         # Python dependencies
+LICENSE                  # MIT License
 ```
 
 ## Key features
 
-- Trigger on pipeline completion and pull pipeline data
-- Analyse `.gitlab-ci.yml` for caching, parallelism, runner tags, image size, and unnecessary jobs
-- Deep **`needs:` DAG inspection** - cycle detection, critical-path depth, parallelism ratio
-- **Runner-tier recommendations** - flags heavy-runner tags on lightweight jobs
-- Estimate emissions using `CO2 = (duration x runner_cores x 0.5 kWh) x carbon_intensity`
-- Generate optimised `.gitlab-ci.yml`
-- Create MR with changes, carbon dashboard, DAG summary, and `/label` quick-actions
+- **Real data, not guesses** — fetches actual job durations and logs from GitLab API
+- **Carbon footprint tracking** — `CO₂ = (duration × cores × 0.5 kWh) × 0.475 kg/kWh`
+- **DAG analysis** — detects sequential bottlenecks, missing `needs:`, cycle detection
+- **Runner tag optimization** — flags heavyweight runners on lightweight jobs
+- **Autonomous MR creation** — creates branch, commits optimized YAML, opens MR
+- **Carbon dashboard** — posts per-job emissions breakdown as MR comment
 
----
+## Agent (Duo Chat)
 
-## One-time project setup
+Chat with `EcoCI Pipeline Optimizer` in GitLab Duo Chat:
 
-All steps below use **GitLab only** (no external services).
+> "Analyze and optimize the pipeline for this project"
 
-### 1. Set your Duo namespace
+The agent will fetch real data, calculate emissions, generate an optimized config, and create an MR.
 
-Go to **User Settings > GitLab Duo > Default namespace** and select **GitLab AI Hackathon**.
+## Flow (triggered by @mention)
 
-### 2. Create a project access token
+The flow runs 4 steps in sequence:
+1. **Pipeline Analyzer** — fetches real job data and identifies inefficiencies
+2. **Carbon Calculator** — computes emissions from actual durations
+3. **Optimization Engine** — generates improved `.gitlab-ci.yml`
+4. **MR Creator** — creates branch, commits, opens MR, posts carbon dashboard
 
-Go to **Settings > Access tokens > Add new token**.
+Trigger by mentioning the flow's user in an issue or MR.
 
-| Field | Value |
-| ----- | ----- |
-| Name | `ecoci-bot` |
-| Scopes | `api`, `read_repository`, `write_repository` |
-| Role | Maintainer |
-| Expiry | 90 days (or as needed) |
+## Alternative: CI job trigger
 
-Copy the token value.
-
-### 3. Store it as a masked CI/CD variable
-
-Go to **Settings > CI/CD > Variables > Add variable**.
-
-| Field | Value |
-| ----- | ----- |
-| Key | `GITLAB_TOKEN` |
-| Value | *(paste the token)* |
-| Mask variable | Yes |
-| Protect variable | Yes |
-
-### 4. Create a pipeline trigger token
-
-Go to **Settings > CI/CD > Pipeline trigger tokens > Add trigger**.
-
-| Field | Value |
-| ----- | ----- |
-| Description | `ecoci-webhook` |
-
-Store the trigger token as another CI/CD variable:
-
-| Key | Flags |
-| --- | ----- |
-| `ECOCI_TRIGGER_TOKEN` | Mask: Yes, Protect: Yes |
-
-### 5. Protect the `ecoci/*` branch pattern
-
-Go to **Settings > Repository > Protected branches > Add**.
-
-| Field | Value |
-| ----- | ----- |
-| Branch | `ecoci/*` |
-| Allowed to merge | Maintainers |
-| Allowed to push | `ecoci-bot` (the token user) |
-
-This ensures only the bot can push to `ecoci/optimize-*` branches.
-
-### 6. Create project labels
-
-Go to **Project > Labels** and create:
-
-- `ecoci`
-- `ci-optimization`
-- `carbon-reduction`
-- `pipeline-optimization`
-
-### 7. (Optional) Tune carbon defaults
-
-Add these CI/CD variables if the defaults do not match your environment:
-
-| Variable | Default | Description |
-| -------- | ------: | ----------- |
-| `CARBON_INTENSITY_KG_PER_KWH` | 0.475 | Regional grid carbon intensity |
-| `DEFAULT_RUNNER_CPU_CORES` | 2 | Assumed CPU cores per runner |
-| `KWH_PER_CORE_HOUR` | 0.5 | Energy per core-hour |
-| `GITLAB_BASE_URL` | `https://gitlab.com` | GitLab instance URL |
-
----
-
-## Pipeline trigger configuration
-
-EcoCI is triggered when a pipeline completes. Two approaches:
-
-### Option A: Webhook into Trigger API (recommended)
-
-1. Go to **Settings > Webhooks > Add webhook**.
-2. URL: point to a small relay (or use a GitLab serverless function) that calls `scripts/ecoci/webhook_trigger.py`.
-3. Trigger: **Pipeline events** only.
-4. The script extracts `project_id`, `pipeline_id`, `ref` from the `pipeline:completed` payload and fires the Pipeline Trigger API:
-
-```
-POST /projects/:id/trigger/pipeline
-  token=ECOCI_TRIGGER_TOKEN
-  ref=main
-  variables[ECOCI_PROJECT_ID]=...
-  variables[ECOCI_PIPELINE_ID]=...
-  variables[ECOCI_REF]=...
-```
-
-5. This starts a new pipeline that runs the `ecoci_runner` job.
-
-### Option B: Manual / scheduled run
-
-Go to **CI/CD > Run pipeline** and set:
-
-| Variable | Value |
-| -------- | ----- |
-| `ECOCI_PROJECT_ID` | numeric project ID |
-| `ECOCI_PIPELINE_ID` | pipeline ID to analyse |
-| `ECOCI_REF` | branch ref of that pipeline |
-
-Click **Run pipeline**. The `ecoci_runner` job picks up and executes.
-
----
-
-## How EcoCI runs end-to-end
-
-```
-Pipeline completes
-      |
-      v
-Webhook / manual trigger
-      |
-      v
-ecoci_runner CI job
-  python -m scripts.ecoci.main --project-id --pipeline-id --ref
-      |
-      v
-  1. Fetch .gitlab-ci.yml
-  2. Analyse (cache, DAG, tags)
-  3. Estimate carbon emissions
-  4. Generate optimised YAML
-  5. Create branch ecoci/optimize-*
-  6. Commit optimised config
-  7. Open MR with labels + metrics
-  8. Post carbon dashboard comment
-```
-
-The Duo Flow (`.gitlab/agents/ecocl-flow.yml`) follows the same
-four-agent chain when invoked from Duo Chat or a flow trigger.
-
----
-
-## Local / manual testing
+You can also trigger EcoCI via a CI pipeline:
 
 ```bash
-export GITLAB_TOKEN=glpat-...
-export GITLAB_BASE_URL=https://gitlab.com
-
-python -m scripts.ecoci.main \
-  --project-id 34560917 \
-  --pipeline-id 12345 \
-  --ref main
+# Go to CI/CD > Run pipeline and set:
+#   ECOCI_PROJECT_ID  = target project ID
+#   ECOCI_PIPELINE_ID = pipeline ID to analyze
+#   ECOCI_REF         = branch ref
 ```
 
----
+## License
 
-## MR template and labels
-
-Every MR opened by EcoCI uses the template at
-`.gitlab/merge_request_templates/ecoci_optimization.md`.
-
-It includes:
-- Optimisation checklist
-- Before / after carbon impact table
-- `/label` quick-actions for `~carbon-reduction`, `~pipeline-optimization`, `~ecoci`
-- Link to the triggering pipeline
+MIT — see [LICENSE](LICENSE)
 
 ---
 
-## Demo storyline
-
-1. Commit a deliberately slow `.gitlab-ci.yml` (`:latest` images, no cache, no `needs:`).
-2. Let the pipeline run and complete.
-3. Trigger EcoCI (webhook or manual).
-4. Show the MR that EcoCI opened:
-   - Optimised YAML diff
-   - Carbon dashboard comment
-   - DAG parallelism improvement
-   - Labels applied automatically
-5. Show metrics: *"Reduced from 45 min to 28 min, saved $420/month, eliminated 840 kg CO2/year."*
-
----
-
-For instructions on how to get started take a look at the [onboarding issue](../../work_items/1) in this project.
+For hackathon onboarding, see the [onboarding issue](../../work_items/1).
