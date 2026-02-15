@@ -15,9 +15,9 @@
       },
       "latest_sync": {
         "git_tag": "v0.1.0",
-        "catalog_version": "1.0.2",
-        "synced_at": "2026-02-15T14:42:42.774Z",
-        "definition_hash": "cff25561dc78dd61"
+        "catalog_version": "1.0.3",
+        "synced_at": "2026-02-15T14:52:02.337Z",
+        "definition_hash": "9ee4f7b0156b0ca9"
       }
     }
   },
