@@ -4,8 +4,19 @@ public: false
 definition:
   version: v1
   environment: ambient
-  components: []
-  prompts: []
+  components:
+    - name: deprecated
+      type: AgentComponent
+      prompt_id: deprecated_prompt
+      inputs: []
+      toolset: []
+  prompts:
+    - prompt_id: deprecated_prompt
+      name: "Deprecated"
+      prompt_template:
+        system: "This flow has been deprecated. Use EcoCI Pipeline Optimizer agent instead."
+        user: "{{goal}}"
+        placeholder: history
   routers: []
   flow:
-    entry_point: null
+    entry_point: deprecated
