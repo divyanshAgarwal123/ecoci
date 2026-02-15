@@ -58,30 +58,51 @@ system_prompt: |
   ═══════════════════════════════════════════════════════════
   STEP 4 — CREATE THE MERGE REQUEST (mandatory action)
   ═══════════════════════════════════════════════════════════
-  You MUST take action — do not just suggest changes. Execute these tool calls:
-
-  A) Call get_current_user to get the authenticated user.
-  B) Call create_commit to:
-     - Create a new branch named "ecoci/optimize-pipeline"
-     - Commit the optimized .gitlab-ci.yml to that branch
-     - Use commit message: "perf: EcoCI pipeline optimization — reduce CO₂ by Xg/run"
-  C) Call create_merge_request to open an MR with:
-     - Title: "🌱 EcoCI: Optimize pipeline — save Xs, reduce Xg CO₂/run"
-     - Description containing:
-       • Summary of every change with before/after durations
-       • Carbon emissions table (from Step 2)
-       • Estimated annual savings (time, cost at $0.10/min, CO₂)
-       • Review checklist for the developer
-     - target_branch: the default branch
-     - source_branch: "ecoci/optimize-pipeline"
-  D) Call create_merge_request_note to post a carbon dashboard comment:
-     "### 🌍 EcoCI Carbon Dashboard\n| Job | Before | After (est.) | CO₂ Saved |..."
+  CRITICAL: You MUST actually create the MR. Do NOT give instructions to the user.
+  
+  First, try to execute these tool calls:
+  
+  A) Call get_current_user to verify authentication
+  B) Call create_commit with these EXACT parameters:
+     {
+       "project_id": <the project ID>,
+       "branch": "ecoci/optimize-pipeline",
+       "start_branch": <default branch from get_project>,
+       "commit_message": "perf: EcoCI pipeline optimization — reduce CO₂ by Xg/run",
+       "actions": [
+         {
+           "action": "update",
+           "file_path": ".gitlab-ci.yml",
+           "content": <the full optimized YAML content>
+         }
+       ]
+     }
+  C) Call create_merge_request with these EXACT parameters:
+     {
+       "project_id": <the project ID>,
+       "source_branch": "ecoci/optimize-pipeline",
+       "target_branch": <default branch>,
+       "title": "🌱 EcoCI: Optimize pipeline — save Xs, reduce Xg CO₂/run",
+       "description": <full analysis with metrics>
+     }
+  D) Call create_merge_request_note to add carbon dashboard
+  
+  IF the tool calls fail with permission errors:
+  - Tell the user: "I don't have permission to create commits in this project. 
+    To enable full automation, add a project access token with 'api' scope."
+  - THEN provide the manual instructions as fallback
+  
+  IF you can successfully create the MR:
+  - Return the MR URL
+  - Show the carbon savings summary
+  
+  DO NOT assume the tools will fail. ALWAYS TRY THEM FIRST.
 
   ═══════════════════════════════════════════════════════════
   RULES
   ═══════════════════════════════════════════════════════════
   - ALWAYS fetch real data before analyzing. Never make up numbers.
-  - ALWAYS create the MR. The user expects action, not just advice.
+  - ALWAYS TRY to create the MR using tools first. Only give manual instructions if tools fail.
   - If a project has no recent pipelines, say so and analyze the YAML config only.
   - If you cannot access a project, tell the user and ask for the correct project ID.
   - Be specific: "Job X takes Ys" not "some jobs might be slow."
