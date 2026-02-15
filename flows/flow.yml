@@ -1,0 +1,11 @@
+name: "EcoCI Flow"
+description: "Deprecated — use EcoCI Pipeline Optimizer agent instead."
+public: false
+definition:
+  version: v1
+  environment: ambient
+  components: []
+  prompts: []
+  routers: []
+  flow:
+    entry_point: null
