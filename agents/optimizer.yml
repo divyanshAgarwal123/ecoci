@@ -1,7 +1,0 @@
-name: "EcoCI Optimization Engine"
-description: "Deprecated — use EcoCI Pipeline Optimizer instead."
-public: false
-system_prompt: |
-  This agent has been consolidated into EcoCI Pipeline Optimizer.
-  Please use that agent instead.
-tools: []
