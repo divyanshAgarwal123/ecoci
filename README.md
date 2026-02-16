@@ -1,10 +1,18 @@
 # EcoCI — Autonomous CI/CD Carbon Optimizer
 
-> **GitLab AI Hackathon 2026** — Built on GitLab Duo Agent Platform
+> **GitLab AI Hackathon 2026** — Built on GitLab Duo Agent Platform  
+> 🤖 **Powered by Anthropic Claude Opus 4.5** | ☁️ **Google Cloud Ready**
 
 EcoCI is an autonomous agent that **fetches real pipeline data**, **calculates actual carbon emissions** from job durations, **generates an optimized `.gitlab-ci.yml`**, and **creates a merge request** — all without human intervention.
 
 **Unlike a basic chatbot**, EcoCI uses GitLab tools to pull live data (`get_pipeline_failing_jobs`, `get_job_logs`) and take real action (`create_commit`, `create_merge_request`).
+
+## 🏆 Hackathon Prize Eligibility
+
+- ✅ **Green Agent Prize** — Reduces CO₂ emissions by 64% per pipeline
+- ✅ **Anthropic Integration Prize** — Uses Claude Opus 4.5 for intelligent optimization decisions → [Read how](ANTHROPIC_INTEGRATION.md)
+- ✅ **Google Cloud Integration** — Optional BigQuery & Carbon Footprint API support → [Integration guide](CLOUD_INTEGRATION.md)
+- ✅ **Sustainable Design Bonus** — Built specifically for environmental impact
 
 ---
 
@@ -105,6 +113,19 @@ You can also trigger EcoCI via a CI pipeline:
 #   ECOCI_PIPELINE_ID = pipeline ID to analyze
 #   ECOCI_REF         = branch ref
 ```
+
+---
+
+## 📚 Deep Dives
+
+Want to learn more about how EcoCI works?
+
+- **[🧠 Anthropic Claude Integration](ANTHROPIC_INTEGRATION.md)** — How Claude Opus 4.5 powers intelligent pipeline analysis and optimization decisions
+- **[☁️ Google Cloud Integration](CLOUD_INTEGRATION.md)** — Optional enhancements: BigQuery for historical tracking, Carbon Footprint API for region-specific calculations, Cloud Run deployment
+- **[📖 Beginner Guide](BEGINNER_GUIDE.md)** — Complete project explanation for those new to GitLab Duo Agents
+- **[🎬 Demo Guide](demo/DEMO_GUIDE.md)** — 10 optimization techniques with before/after comparison (64% CO₂ reduction)
+
+---
 
 ## License
 
