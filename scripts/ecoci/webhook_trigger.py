@@ -2,6 +2,11 @@
 """
 Webhook receiver / trigger script for EcoCI.
 
+This script can be used in two modes:
+1. CLI trigger (original functionality)
+2. HTTP webhook server for Google Cloud Run deployment
+
+─── Mode 1: CLI Trigger ────────────────────────────────────────
 This script is designed to be called by a GitLab project webhook
 (Pipeline events) or from a scheduled pipeline.  It extracts the
 completed-pipeline metadata and triggers a new pipeline via the
@@ -27,6 +32,17 @@ that the `ecoci_runner` CI job expects.
        --project-id 34560917 \\
        --pipeline-id 12345 \\
        --ref main
+
+─── Mode 2: Cloud Run Webhook Server ───────────────────────────
+Deploy to Google Cloud Run to handle GitLab webhooks automatically:
+
+    gcloud run deploy ecoci-webhook \\
+      --source . \\
+      --region us-central1 \\
+      --set-env-vars GITLAB_TOKEN=glpat-...
+
+Then configure GitLab webhook to POST to: https://your-service.run.app/webhook
+
 
 ─── How it works ───────────────────────────────────────────────
 The script calls:
@@ -142,5 +158,83 @@ def main() -> None:
     print(f"✅ Pipeline triggered: {result.get('web_url', result.get('id'))}")
 
 
+def run_webhook_server():
+    """Run HTTP server mode for Cloud Run deployment."""
+    from http.server import HTTPServer, BaseHTTPRequestHandler
+    
+    class WebhookHandler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            if self.path == "/webhook":
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length)
+                
+                try:
+                    payload = json.loads(post_data)
+                    
+                    # Only process pipeline events
+                    if payload.get("object_kind") != "pipeline":
+                        self.send_response(200)
+                        self.end_headers()
+                        self.wfile.write(b"OK - not a pipeline event")
+                        return
+                    
+                    # Trigger EcoCI optimization
+                    ecoci_project_id = payload.get("project", {}).get("id")
+                    ecoci_pipeline_id = payload.get("object_attributes", {}).get("id")
+                    ecoci_ref = payload.get("object_attributes", {}).get("ref", "main")
+                    
+                    print(f"📥 Webhook received: project={ecoci_project_id}, pipeline={ecoci_pipeline_id}")
+                    
+                    # Use environment variables for trigger
+                    result = trigger_ecoci_pipeline(
+                        base_url=os.getenv("GITLAB_BASE_URL", "https://gitlab.com"),
+                        project_id=os.getenv("ECOCI_HOST_PROJECT", "34560917"),
+                        trigger_token=os.getenv("ECOCI_TRIGGER_TOKEN", ""),
+                        ref="main",
+                        ecoci_project_id=str(ecoci_project_id),
+                        ecoci_pipeline_id=str(ecoci_pipeline_id),
+                        ecoci_ref=ecoci_ref,
+                    )
+                    
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"status": "triggered", "result": result}).encode())
+                    
+                except Exception as e:
+                    print(f"❌ Error: {e}")
+                    self.send_response(500)
+                    self.end_headers()
+                    self.wfile.write(str(e).encode())
+            else:
+                self.send_response(404)
+                self.end_headers()
+        
+        def do_GET(self):
+            if self.path == "/health":
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                health = {
+                    "status": "healthy",
+                    "service": "ecoci-webhook",
+                    "gcp_enabled": bool(os.getenv("GCP_PROJECT_ID"))
+                }
+                self.wfile.write(json.dumps(health).encode())
+            else:
+                self.send_response(404)
+                self.end_headers()
+    
+    port = int(os.getenv("PORT", 8080))
+    server = HTTPServer(("0.0.0.0", port), WebhookHandler)
+    print(f"🌐 EcoCI webhook server listening on port {port}")
+    print(f"☁️ Google Cloud: {'Enabled' if os.getenv('GCP_PROJECT_ID') else 'Disabled'}")
+    server.serve_forever()
+
+
 if __name__ == "__main__":
-    main()
+    # Check if running in server mode (Cloud Run)
+    if os.getenv("RUN_MODE") == "server":
+        run_webhook_server()
+    else:
+        main()

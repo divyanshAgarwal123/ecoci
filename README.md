@@ -11,8 +11,14 @@ EcoCI is an autonomous agent that **fetches real pipeline data**, **calculates a
 
 - ✅ **Green Agent Prize** — Reduces CO₂ emissions by 64% per pipeline
 - ✅ **Anthropic Integration Prize** — Uses Claude Opus 4.5 for intelligent optimization decisions → [Read how](ANTHROPIC_INTEGRATION.md)
-- ✅ **Google Cloud Integration** — Optional BigQuery & Carbon Footprint API support → [Integration guide](CLOUD_INTEGRATION.md)
+- ✅ **Google Cloud Integration** — BigQuery metrics tracking, Carbon Footprint API, Cloud Run deployment → [Integration guide](CLOUD_INTEGRATION.md)
 - ✅ **Sustainable Design Bonus** — Built specifically for environmental impact
+
+**Google Cloud Features (Implemented):**
+- 📊 BigQuery integration for historical carbon metrics
+- ☁️ Region-specific carbon intensity via Google Cloud Carbon Footprint
+- 🚀 Cloud Run deployment for webhook automation
+- 📈 SQL queries for carbon trend analysis
 
 ---
 
