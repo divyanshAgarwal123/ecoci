@@ -48,10 +48,10 @@ Click **"Variables" → "Expand" → "Add variable"**
 {
   "type": "service_account",
   "project_id": "ecoci-carbon-tracking",
-  "private_key_id": "REDACTED_KEY_ID",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nREDACTED\nREDACTED+h/ZSTCE9VHWsaQw+\n42ui4LcO87UZF3WkmVU5dL6GyCtzR9tRz6MfSLVKlp6Wpx8d9ZpS291EOifMCs58\nD4rr2jATYFppRSc8hO33Ny3KAqQ8hLEkesISlq2nw0TXfrR/5EIBqVWPJuA7g4tu\n5KR5s7cO9q6Y9T40QHzkyVyF7Km+7Jpehaob2MOKmxTGa1iGA7Gy5TU5osDcEIPJ\na3KeCSpSyYn929Tdh/C7puxCmqcDbkr+Pb0nJS2qpFKlbxV3+BSSBRYMkKOYjEZe\nRe1bPWClAgMBAAECggEAREDACTED\nTHe5O9bqDo4boWdWuzPeRHpheULIdlpUf/Bhv0BWvu2D2/7Eobltd6OFMzpA90Ww\nVlPFZUOBJ4xTB6tzRLz5GzRDIYTbqV/yVct4bQQYIec79cYS2kqeyXmZPFfY2abA\nPHYJW/yHX+Gxgh9nxraey4rV0C+zwhKQQ6A5/I+ea6CWwVXAyaewfE0wSGu0hUU0\nm5DSYgNsnhy0EvrM3m2Th3YAuJhY16l/3cN0HvrWcNh/+I8GiTPKuzpOujFj3gk3\nx09XrGlFzL11nH/36RWedk+QKkZ3BxRYrEHbZSDbAQKBgQDO3SW+XKeAj8LRCxom\nNsNitVpqSJwOWL1Petig0Y1qgnHHEGX8r+1ITY70frZ1Hcs4EiVdUs0A+47EVs6n\nEsfmeXJfZDy58inOAmReGj5RJQU3fGxhOzMGxmkqeI2LUfXi2wC+6cNsx6mkWZZA\nhQcN1utBMH6tKiOEHnpSPgIDpQKBgQDHdlL3ykWdmGEhfsYlLwCfZ3QgB1UyV0EK\ndeLJrbqhdY4Qsvh5mn54h90ln0MVlPbMRMMD+URYUy6nhV+9ww12DvWKv9np/jR6\nc+hCFWPNSZgf1OB21wR3IRxqRN05YsBJzrKcgKrYAcEbKK+GQbRzSwdEnhzMMurv\nx1l8FGtZAQKBgCPkVQcpdlqlFu1EWt4khFQdGTn1rTYECZy/uNR2Z24CghFC9B8a\nuzXfVx1u2uOJLthktZzyn+U6wHOqiCKO7KY9ji2k67Brpvs6iQWW0hcsMDKHYRqh\nteHIDTk0P4Lbzqj0zLVTQ/gc0H9Wl+5L5oRtNNZTvrb258CltR2N6rWNAoGAXPX4\nlSPgbiKmokXDc3EEiUZeCM9iFaQ02/s1R2mAod935rCCvaoTZ3lqyC4Bxf03SNyD\nR0bVY5ThGZI/nOFbVLqEFbZ0iWnAa5G5nZL6gKLcE3nTY4+ytRLpe128/RHZLIz5\nEZemCCZJKa88nwXgZBuDt6c5JLJWbIosWnfp0AECgYEAREDACTED\nt6bAL4fh2cNOB+mxPP/EXgQK6hl5rp+Ou/iRf3tU5g2R1dz9ce1nvAMngPA3voWq\n8GN4IUTlqTCuxrwscfF+vRUj2jrvuiyQ1YVyJahxpqjHbWusppY5hBNHDh/1Bu1R\nwyqUgr33q5AESwletdfh5R4=\n-----END PRIVATE KEY-----\n",
+  "private_key_id": "<YOUR_PRIVATE_KEY_ID>",
+  "private_key": "-----BEGIN PRIVATE KEY-----\n<YOUR_PRIVATE_KEY_HERE>\n-----END PRIVATE KEY-----\n",
   "client_email": "ecoci-bot@ecoci-carbon-tracking.iam.gserviceaccount.com",
-  "client_id": "REDACTED_CLIENT_ID",
+  "client_id": "<YOUR_CLIENT_ID>",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
   "token_uri": "https://oauth2.googleapis.com/token",
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
@@ -59,6 +59,9 @@ Click **"Variables" → "Expand" → "Add variable"**
   "universe_domain": "googleapis.com"
 }
 ```
+
+> ⚠️ **IMPORTANT:** Replace the placeholder values above with your actual service account key.
+> Generate one via: `gcloud iam service-accounts keys create key.json --iam-account=ecoci-bot@ecoci-carbon-tracking.iam.gserviceaccount.com`
 
 ---
 
