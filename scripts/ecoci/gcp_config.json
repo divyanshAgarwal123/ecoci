@@ -1,0 +1,6 @@
+{
+  "gcp_project_id": "ecoci-carbon-tracking",
+  "bigquery_dataset": "ecoci_metrics",
+  "bigquery_table": "pipeline_runs",
+  "service_account_email": "ecoci-bot@ecoci-carbon-tracking.iam.gserviceaccount.com"
+}

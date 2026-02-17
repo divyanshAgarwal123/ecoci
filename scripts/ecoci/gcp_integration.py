@@ -4,13 +4,74 @@ from __future__ import annotations
 
 import os
 import json
+from pathlib import Path
 from typing import Any, Dict, Optional
 from datetime import datetime
+
+# Path to config and service account key (relative to this file)
+_THIS_DIR = Path(__file__).resolve().parent
+_GCP_CONFIG_PATH = _THIS_DIR / "gcp_config.json"
+_PROJECT_ROOT = _THIS_DIR.parent.parent
+_SERVICE_ACCOUNT_KEY_PATH = _PROJECT_ROOT / "ecoci-service-account.json"
+
+
+def _load_gcp_config() -> Dict[str, str]:
+    """Load GCP config from gcp_config.json or environment variables."""
+    config = {}
+    
+    # Try loading from config file first
+    if _GCP_CONFIG_PATH.exists():
+        with open(_GCP_CONFIG_PATH) as f:
+            config = json.load(f)
+    
+    # Environment variables override config file
+    return {
+        "project_id": os.getenv("GCP_PROJECT_ID", config.get("gcp_project_id", "")),
+        "dataset": os.getenv("BIGQUERY_DATASET", config.get("bigquery_dataset", "ecoci_metrics")),
+        "table": config.get("bigquery_table", "pipeline_runs"),
+    }
+
+
+def _get_credentials():
+    """
+    Load Google Cloud credentials from:
+    1. GCP_SERVICE_ACCOUNT_KEY env var (JSON string) — for CI/CD
+    2. ecoci-service-account.json file — for local development
+    3. Application Default Credentials (ADC) — for Cloud Run
+    """
+    try:
+        from google.oauth2 import service_account
+        
+        # Option 1: Environment variable (CI/CD)
+        creds_json = os.getenv("GCP_SERVICE_ACCOUNT_KEY")
+        if creds_json:
+            return service_account.Credentials.from_service_account_info(
+                json.loads(creds_json)
+            )
+        
+        # Option 2: Local key file
+        if _SERVICE_ACCOUNT_KEY_PATH.exists():
+            return service_account.Credentials.from_service_account_file(
+                str(_SERVICE_ACCOUNT_KEY_PATH)
+            )
+        
+        # Option 3: Application Default Credentials (Cloud Run / gcloud auth)
+        import google.auth
+        credentials, _ = google.auth.default()
+        return credentials
+        
+    except Exception:
+        return None
 
 
 def is_gcp_enabled() -> bool:
     """Check if Google Cloud integration is configured."""
-    return bool(os.getenv("GCP_PROJECT_ID") and os.getenv("GCP_SERVICE_ACCOUNT_KEY"))
+    config = _load_gcp_config()
+    if not config.get("project_id"):
+        return False
+    
+    # Check if we can get credentials
+    return _get_credentials() is not None
 
 
 def save_to_bigquery(metrics: Dict[str, Any]) -> bool:
@@ -28,47 +89,43 @@ def save_to_bigquery(metrics: Dict[str, Any]) -> bool:
     
     try:
         from google.cloud import bigquery
-        from google.oauth2 import service_account
         
-        # Load service account credentials
-        creds_json = os.getenv("GCP_SERVICE_ACCOUNT_KEY")
-        if not creds_json:
+        config = _load_gcp_config()
+        credentials = _get_credentials()
+        if not credentials:
             return False
-            
-        credentials = service_account.Credentials.from_service_account_info(
-            json.loads(creds_json)
-        )
         
         client = bigquery.Client(
             credentials=credentials,
-            project=os.getenv("GCP_PROJECT_ID")
+            project=config["project_id"]
         )
         
         # Prepare row for insertion
-        table_id = f"{os.getenv('GCP_PROJECT_ID')}.{os.getenv('BIGQUERY_DATASET', 'ecoci_metrics')}.pipeline_runs"
+        table_id = f"{config['project_id']}.{config['dataset']}.{config['table']}"
         
-        rows_to_insert = [{
-            "pipeline_id": metrics.get("pipeline_id"),
-            "project_id": metrics.get("project_id"),
-            "project_name": metrics.get("project_name"),
-            "run_timestamp": datetime.utcnow().isoformat(),
-            "total_duration_seconds": metrics.get("total_duration_seconds"),
-            "total_energy_wh": metrics.get("total_energy_wh"),
-            "total_co2_grams": metrics.get("total_co2_grams"),
-            "optimizations_applied": metrics.get("optimizations_applied", []),
+        timestamp = datetime.utcnow().isoformat()
+        
+        row = {
+            "pipeline_id": metrics.get("pipeline_id", 0),
+            "project_id": metrics.get("project_id", 0),
+            "project_name": metrics.get("project_name", ""),
+            "run_timestamp": timestamp,
+            "total_duration_seconds": metrics.get("total_duration_seconds", 0),
+            "total_energy_wh": metrics.get("total_energy_wh", 0),
+            "total_co2_grams": metrics.get("total_co2_grams", 0),
             "savings_percent": metrics.get("savings_percent", 0),
             "runner_region": metrics.get("runner_region", "unknown"),
-            "gitlab_ci_yml_hash": metrics.get("gitlab_ci_yml_hash", "")
-        }]
+            "gitlab_ci_yml_hash": metrics.get("gitlab_ci_yml_hash", ""),
+        }
         
-        errors = client.insert_rows_json(table_id, rows_to_insert)
+        # Use load_table_from_json (free tier compatible, no streaming/DML)
+        table_ref = client.get_table(table_id)
+        errors = client.load_table_from_json(
+            [row], table_ref
+        ).result()
         
-        if not errors:
-            print(f"✅ Saved to BigQuery: {metrics.get('total_co2_grams')}g CO₂")
-            return True
-        else:
-            print(f"⚠️ BigQuery insert errors: {errors}")
-            return False
+        print(f"✅ Saved to BigQuery: {row['total_co2_grams']}g CO₂")
+        return True
             
     except Exception as e:
         print(f"⚠️ BigQuery integration failed: {e}")
@@ -135,23 +192,19 @@ def setup_bigquery_table() -> bool:
         
     try:
         from google.cloud import bigquery
-        from google.oauth2 import service_account
         
-        creds_json = os.getenv("GCP_SERVICE_ACCOUNT_KEY")
-        if not creds_json:
+        config = _load_gcp_config()
+        credentials = _get_credentials()
+        if not credentials:
             return False
-            
-        credentials = service_account.Credentials.from_service_account_info(
-            json.loads(creds_json)
-        )
         
         client = bigquery.Client(
             credentials=credentials,
-            project=os.getenv("GCP_PROJECT_ID")
+            project=config["project_id"]
         )
         
-        dataset_id = os.getenv('BIGQUERY_DATASET', 'ecoci_metrics')
-        dataset_ref = f"{os.getenv('GCP_PROJECT_ID')}.{dataset_id}"
+        dataset_id = config["dataset"]
+        dataset_ref = f"{config['project_id']}.{dataset_id}"
         
         # Create dataset if it doesn't exist
         try:
@@ -209,22 +262,18 @@ def query_carbon_trends(days: int = 30) -> Optional[Dict[str, Any]]:
         
     try:
         from google.cloud import bigquery
-        from google.oauth2 import service_account
         
-        creds_json = os.getenv("GCP_SERVICE_ACCOUNT_KEY")
-        if not creds_json:
+        config = _load_gcp_config()
+        credentials = _get_credentials()
+        if not credentials:
             return None
-            
-        credentials = service_account.Credentials.from_service_account_info(
-            json.loads(creds_json)
-        )
         
         client = bigquery.Client(
             credentials=credentials,
-            project=os.getenv("GCP_PROJECT_ID")
+            project=config["project_id"]
         )
         
-        table_ref = f"{os.getenv('GCP_PROJECT_ID')}.{os.getenv('BIGQUERY_DATASET', 'ecoci_metrics')}.pipeline_runs"
+        table_ref = f"{config['project_id']}.{config['dataset']}.{config['table']}"
         
         query = f"""
         SELECT 
