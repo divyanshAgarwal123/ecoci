@@ -1,0 +1,94 @@
+# INTENTIONALLY BAD CI/CD CONFIG FOR TESTING ECOCI
+# This has 10+ problems that EcoCI should detect and fix
+
+stages:
+  - install
+  - lint
+  - test
+  - build
+  - security
+  - deploy
+
+# PROBLEM 1: No caching - downloads 500MB of node_modules every time
+# PROBLEM 2: Using heavy :latest image instead of -slim
+install:
+  image: node:18
+  stage: install
+  script:
+    - npm install
+    - npm audit
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+
+# PROBLEM 3: Runs sequentially, doesn't use needs:
+# PROBLEM 4: Could run in parallel with tests
+lint:
+  image: node:18
+  stage: lint
+  script:
+    - npm run lint
+  dependencies:
+    - install
+
+# PROBLEM 5: Sequential test execution (could parallelize)
+# PROBLEM 6: No test splitting across multiple runners
+test:unit:
+  image: node:18
+  stage: test
+  script:
+    - npm run test:unit -- --verbose
+  dependencies:
+    - install
+  artifacts:
+    reports:
+      junit: junit.xml
+
+test:integration:
+  image: node:18
+  stage: test
+  script:
+    - npm run test:integration
+  dependencies:
+    - install
+
+# PROBLEM 7: Runs on every commit, even doc-only changes
+build:
+  image: node:18
+  stage: build
+  script:
+    - npm run build
+    - echo "Build completed"
+  dependencies:
+    - install
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+
+# PROBLEM 8: Security scan without Secret Detection template
+# PROBLEM 9: Missing SAST, DAST, Dependency Scanning
+security:scan:
+  image: node:18
+  stage: security
+  script:
+    - npm audit --audit-level=moderate
+  allow_failure: true
+
+# PROBLEM 10: Uses :latest tag (supply chain risk)
+# PROBLEM 11: Runs privileged container unnecessarily
+# PROBLEM 12: Has hardcoded secrets (detected by EcoCI security scanner)
+deploy:staging:
+  image: ubuntu:latest
+  stage: deploy
+  script:
+    - echo "Deploying to staging..."
+    - export AWS_ACCESS_KEY="AKIAIOSFODNN7EXAMPLE"
+    - curl https://deploy-script.example.com/setup.sh | bash
+    - docker run --privileged myapp:latest
+  environment:
+    name: staging
+    url: https://staging.example.com
+  only:
+    - main

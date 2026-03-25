@@ -1,0 +1,41 @@
+{
+  "name": "ecoci-vscode",
+  "displayName": "EcoCI",
+  "description": "Analyze and optimize CI workflows with EcoCI CLI",
+  "version": "0.1.0",
+  "publisher": "ecoci",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Testing",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ecoci.analyzeRepo",
+        "title": "EcoCI: Analyze Current Repo"
+      },
+      {
+        "command": "ecoci.optimizeWorkflows",
+        "title": "EcoCI: Optimize CI Workflows"
+      },
+      {
+        "command": "ecoci.createOptimizationPR",
+        "title": "EcoCI: Create Optimization PR"
+      },
+      {
+        "command": "ecoci.showCarbonCostSummary",
+        "title": "EcoCI: Show Carbon & Cost Summary"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "echo 'No build step required for JS MVP extension'"
+  }
+}

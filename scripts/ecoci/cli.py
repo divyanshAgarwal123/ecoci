@@ -62,6 +62,7 @@ GitLab:  https://gitlab.com/gitlab-ai-hackathon/participants/34560917
     analyze_parser.add_argument("--workflow", help="Workflow path (e.g., .github/workflows/test.yml). Defaults to first found.")
     analyze_parser.add_argument("--run-id", type=int, help="GitHub Actions run ID for real job duration data")
     analyze_parser.add_argument("--json", action="store_true", help="Output JSON")
+    analyze_parser.add_argument("--markdown", help="Write markdown report to file")
 
     # ─── optimize (GitHub-first universal flow) ───
     optimize_parser = subparsers.add_parser("optimize", help="Generate optimized workflow YAML")
@@ -73,15 +74,19 @@ GitLab:  https://gitlab.com/gitlab-ai-hackathon/participants/34560917
     optimize_parser.add_argument("--json", action="store_true", help="Output JSON")
 
     # ─── pr (GitHub-first universal flow) ───
-    pr_parser = subparsers.add_parser("pr", help="Create optimization pull request (GitHub)")
-    pr_parser.add_argument("--provider", default="github", choices=["github"], help="CI provider")
-    pr_parser.add_argument("--repo", help="Repository as owner/repo (auto-detected if omitted)")
-    pr_parser.add_argument("--base", help="Base branch (defaults to repository default branch)")
-    pr_parser.add_argument("--branch", default="ecoci/optimize-workflow", help="PR source branch")
-    pr_parser.add_argument("--workflow", help="Workflow path to optimize and commit")
-    pr_parser.add_argument("--title", default="EcoCI: Optimize GitHub Actions workflow", help="Pull request title")
-    pr_parser.add_argument("--commit-message", default="chore(ci): optimize workflow with EcoCI", help="Commit message")
-    pr_parser.add_argument("--json", action="store_true", help="Output JSON")
+    pr_parser = subparsers.add_parser("pr", help="Pull request operations")
+    pr_subparsers = pr_parser.add_subparsers(dest="pr_command", help="PR commands")
+
+    pr_create_parser = pr_subparsers.add_parser("create", help="Create optimization pull request (GitHub)")
+    pr_create_parser.add_argument("--provider", default="github", choices=["github"], help="CI provider")
+    pr_create_parser.add_argument("--repo", help="Repository as owner/repo (auto-detected if omitted)")
+    pr_create_parser.add_argument("--base", help="Base branch (defaults to repository default branch)")
+    pr_create_parser.add_argument("--branch", default="ecoci/optimize-workflow", help="PR source branch")
+    pr_create_parser.add_argument("--workflow", help="Workflow path to optimize and commit")
+    pr_create_parser.add_argument("--title", default="EcoCI: Optimize GitHub Actions workflow", help="Pull request title")
+    pr_create_parser.add_argument("--commit-message", default="chore(ci): optimize workflow with EcoCI", help="Commit message")
+    pr_create_parser.add_argument("--run-id", type=int, help="Actions run ID used to generate dashboard metrics")
+    pr_create_parser.add_argument("--json", action="store_true", help="Output JSON")
     
     # ─── cost ───
     cost_parser = subparsers.add_parser("cost", help="Calculate pipeline cost")
@@ -209,6 +214,7 @@ def cmd_analyze(args):
         run_jobs = provider.get_run_jobs(repo, args.run_id)
 
     analysis = provider.analyze_workflow(workflow_yaml, run_jobs=run_jobs)
+    metrics = provider.compute_run_metrics(run_jobs or []) if run_jobs else None
     payload = {
         "provider": "github",
         "repo": repo,
@@ -216,6 +222,8 @@ def cmd_analyze(args):
         "workflow": workflow_path,
         "analysis": analysis,
     }
+    if metrics:
+        payload["metrics"] = metrics
 
     if args.json:
         print(json.dumps(payload, indent=2))
@@ -236,6 +244,40 @@ def cmd_analyze(args):
     print(f"\n  Recommendations: {len(recs)}")
     for r in recs:
         print(f"    - {r}")
+
+    if metrics:
+        print("\n📊 Real run metrics")
+        print(f"  Total duration: {metrics['total_duration_seconds']}s")
+        print(f"  Estimated cost: ${metrics['total_cost_usd']}")
+        print(f"  Estimated energy: {metrics['total_kwh']} kWh")
+        print(f"  Estimated CO2: {metrics['total_co2_kg']} kg")
+
+    if args.markdown:
+        lines = [
+            "# EcoCI Analysis Report",
+            "",
+            f"- Provider: github",
+            f"- Repo: {repo}",
+            f"- Workflow: {workflow_path}",
+            "",
+            "## Issues",
+        ]
+        for i in issues:
+            lines.append(f"- {i}")
+        lines.extend(["", "## Recommendations"])
+        for r in recs:
+            lines.append(f"- {r}")
+        if metrics:
+            lines.extend([
+                "",
+                "## Metrics",
+                f"- Total duration: {metrics['total_duration_seconds']}s",
+                f"- Estimated cost: ${metrics['total_cost_usd']}",
+                f"- Energy: {metrics['total_kwh']} kWh",
+                f"- CO2: {metrics['total_co2_kg']} kg",
+            ])
+        Path(args.markdown).write_text("\n".join(lines))
+        print(f"\n📝 Wrote markdown report to {args.markdown}")
 
 
 def cmd_optimize(args):
@@ -279,6 +321,13 @@ def cmd_optimize(args):
 
 
 def cmd_pr(args):
+    if not getattr(args, "pr_command", None):
+        # Backward compatibility: treat `ecoci pr ...` as `ecoci pr create ...`
+        setattr(args, "pr_command", "create")
+
+    if args.pr_command != "create":
+        raise RuntimeError(f"Unsupported pr command: {args.pr_command}")
+
     from ecoci.providers.github import GitHubProvider
 
     provider = GitHubProvider()
@@ -316,6 +365,19 @@ def cmd_pr(args):
         body=pr_body,
         commit_message=args.commit_message,
     )
+
+    metrics = None
+    if args.run_id:
+        jobs = provider.get_run_jobs(repo, args.run_id)
+        metrics = provider.compute_run_metrics(jobs)
+        pr_number = result.get("pull_request", {}).get("number")
+        if pr_number:
+            dashboard = provider.build_dashboard_markdown(repo, workflow_path, args.run_id, metrics)
+            comment = provider.create_pr_comment(repo, int(pr_number), dashboard)
+            result["dashboard_comment"] = comment
+
+    if metrics:
+        result["metrics"] = metrics
 
     if args.json:
         print(json.dumps(result, indent=2))

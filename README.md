@@ -221,6 +221,28 @@ ecoci fix
 ecoci report
 ```
 
+### C) GitHub-first universal CLI (MVP)
+
+```bash
+# Analyze first workflow in repo (auto-detect owner/repo from git remote)
+ecoci analyze --provider github --json
+
+# Analyze using real run job durations
+ecoci analyze --provider github --run-id <actions_run_id> --markdown ecoci-report.md
+
+# Generate optimized workflow YAML patch/preview
+ecoci optimize --provider github --json
+
+# Write optimized workflow to a file
+ecoci optimize --provider github --workflow .github/workflows/test.yml --out optimized-workflow.yml
+
+# Create PR with optimized workflow
+ecoci pr create --provider github --title "EcoCI: Optimize workflow"
+
+# Create PR + post carbon/cost dashboard from a real run
+ecoci pr create --provider github --run-id <actions_run_id>
+```
+
 ### C) Webhook/server mode
 
 Run as HTTP service:
@@ -233,6 +255,20 @@ Container deployment helpers:
 
 - [Dockerfile](Dockerfile)
 - [scripts/deploy_cloud_run.sh](scripts/deploy_cloud_run.sh)
+
+### D) VS Code extension (MVP)
+
+A lightweight VS Code extension wrapper is included:
+
+- [vscode-extensions/ecoci-vscode/package.json](vscode-extensions/ecoci-vscode/package.json)
+- [vscode-extensions/ecoci-vscode/src/extension.js](vscode-extensions/ecoci-vscode/src/extension.js)
+
+Contributed commands:
+
+- `EcoCI: Analyze Current Repo`
+- `EcoCI: Optimize CI Workflows`
+- `EcoCI: Create Optimization PR`
+- `EcoCI: Show Carbon & Cost Summary`
 
 ---
 
