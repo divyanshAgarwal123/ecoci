@@ -315,6 +315,7 @@ Dashboard UX (Phase 2.2):
 - Website landing page: [website/index.html](website/index.html)
 - Downloads/install matrix: [website/downloads.html](website/downloads.html)
 - Guided quickstart: [website/quickstart.html](website/quickstart.html)
+- Command examples cookbook: [website/examples.html](website/examples.html)
 
 Website now includes:
 

@@ -125,6 +125,12 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
 - Linked quickstart from homepage and downloads pages.
 - Added install → analyze → optimize → PR flow in one guided sequence.
 
+### Phase 4.3 (Current increment)
+
+- Added command examples cookbook page for common CLI workflows.
+- Added troubleshooting tips for repo detection, token scope, and run metrics.
+- Linked examples page across website navigation for faster onboarding.
+
 ---
 
 ## Phase 5: Multi-provider expansion

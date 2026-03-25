@@ -22,6 +22,7 @@ All notable changes to this project are documented in this file.
 - Expanded downloads page with artifact-level install guidance for wheel/sdist/VSIX.
 - Added explicit CLI + VS Code dashboard verification flows in website docs.
 - Added dedicated quickstart website page with end-to-end onboarding flow.
+- Added website command examples cookbook page with troubleshooting notes.
 
 ### Changed
 - Run metric estimation now uses runner metadata heuristics (estimated core count + OS multiplier) for improved energy realism.
