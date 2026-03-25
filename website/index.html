@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoCI — CI Optimization CLI + VS Code Extension</title>
+  <style>
+    body { font-family: Inter, system-ui, sans-serif; margin: 0; background: #0b1020; color: #eaf0ff; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 48px 20px; }
+    h1 { font-size: 2.2rem; margin-bottom: 8px; }
+    .muted { color: #a7b4d4; }
+    .card { background: #151c34; border: 1px solid #27325b; border-radius: 12px; padding: 18px; margin-top: 16px; }
+    code { background: #0c1330; padding: 2px 6px; border-radius: 6px; }
+    a { color: #91b6ff; }
+    ul { line-height: 1.7; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>EcoCI</h1>
+    <p class="muted">Provider-pluggable CI optimization toolkit for GitHub-first workflows.</p>
+
+    <section class="card">
+      <h2>Install CLI</h2>
+      <p>Use Python package install:</p>
+      <p><code>pip install ecoci</code> or <code>pipx install ecoci</code></p>
+      <p>Required for GitHub PR actions: <code>GITHUB_TOKEN</code></p>
+    </section>
+
+    <section class="card">
+      <h2>Quick start</h2>
+      <ul>
+        <li><code>ecoci doctor --provider github</code></li>
+        <li><code>ecoci analyze --provider github --json</code></li>
+        <li><code>ecoci optimize --provider github --json</code></li>
+        <li><code>ecoci pr create --provider github --dry-run</code></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>VS Code extension</h2>
+      <p>MVP extension scaffold is in this repository:</p>
+      <p><code>vscode-extensions/ecoci-vscode</code></p>
+      <p>Commands included:</p>
+      <ul>
+        <li>EcoCI: Analyze Current Repo</li>
+        <li>EcoCI: Optimize CI Workflows</li>
+        <li>EcoCI: Create Optimization PR</li>
+        <li>EcoCI: Show Carbon &amp; Cost Summary</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Source</h2>
+      <p><a href="https://github.com/divyanshAgarwal123/ecoci">GitHub Repository</a></p>
+    </section>
+  </main>
+</body>
+</html>

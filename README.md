@@ -241,6 +241,9 @@ ecoci pr create --provider github --title "EcoCI: Optimize workflow"
 
 # Create PR + post carbon/cost dashboard from a real run
 ecoci pr create --provider github --run-id <actions_run_id>
+
+# Validate setup/auth/workflow discovery
+ecoci doctor --provider github
 ```
 
 ### C) Webhook/server mode
@@ -269,6 +272,11 @@ Contributed commands:
 - `EcoCI: Optimize CI Workflows`
 - `EcoCI: Create Optimization PR`
 - `EcoCI: Show Carbon & Cost Summary`
+
+### E) Product roadmap + website scaffold
+
+- Product roadmap: [ROADMAP.md](ROADMAP.md)
+- Website scaffold: [website/index.html](website/index.html)
 
 ---
 
