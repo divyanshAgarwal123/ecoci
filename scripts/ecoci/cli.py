@@ -84,6 +84,8 @@ GitLab:  https://gitlab.com/gitlab-ai-hackathon/participants/34560917
     optimize_parser.add_argument("--workflow", help="Workflow path to optimize")
     optimize_parser.add_argument("--out", help="Output file path for optimized YAML")
     optimize_parser.add_argument("--show-diff", action="store_true", help="Show unified diff preview")
+    optimize_parser.add_argument("--deterministic-patch", action="store_true", help="Generate deterministic unified patch output for CI bots")
+    optimize_parser.add_argument("--patch-file", help="Write unified diff patch to file")
     optimize_parser.add_argument("--json", action="store_true", help="Output JSON")
 
     # ─── pr (GitHub-first universal flow) ───
@@ -299,12 +301,15 @@ def cmd_analyze(args):
 
     analysis = provider.analyze_workflow(workflow_yaml, run_jobs=run_jobs)
     metrics = provider.compute_run_metrics(run_jobs or []) if run_jobs else None
+    optimization_preview = provider.optimize_workflow_with_metadata(workflow_yaml, workflow_path=workflow_path)
+    kpi_impact = provider.estimate_kpi_impact(optimization_preview.get("changes", []), metrics)
     payload = {
         "provider": "github",
         "repo": repo,
         "ref": args.ref,
         "workflow": workflow_path,
         "analysis": analysis,
+        "kpi_impact": kpi_impact,
     }
     if metrics:
         payload["metrics"] = metrics
@@ -360,6 +365,13 @@ def cmd_analyze(args):
         print(f"  Estimated energy: {metrics['total_kwh']} kWh")
         print(f"  Estimated CO2: {metrics['total_co2_kg']} kg")
 
+    if kpi_impact:
+        imp = kpi_impact.get("estimated_improvements", {})
+        print("\n📈 Projected KPI impact (heuristic)")
+        print(f"  Duration improvement: {imp.get('duration_percent', 0)}%")
+        print(f"  Cost improvement:     {imp.get('cost_percent', 0)}%")
+        print(f"  CO2 improvement:      {imp.get('co2_percent', 0)}%")
+
     if args.markdown:
         lines = [
             "# EcoCI Analysis Report",
@@ -408,6 +420,26 @@ def cmd_analyze(args):
                 f"- Energy: {metrics['total_kwh']} kWh",
                 f"- CO2: {metrics['total_co2_kg']} kg",
             ])
+        if kpi_impact:
+            imp = kpi_impact.get("estimated_improvements", {})
+            lines.extend([
+                "",
+                "## Before/After KPI Projection",
+                f"- Estimated duration improvement: {imp.get('duration_percent', 0)}%",
+                f"- Estimated cost improvement: {imp.get('cost_percent', 0)}%",
+                f"- Estimated CO2 improvement: {imp.get('co2_percent', 0)}%",
+            ])
+            baseline = kpi_impact.get("baseline")
+            projected = kpi_impact.get("projected")
+            if baseline and projected:
+                lines.extend([
+                    "",
+                    "| KPI | Before | After (Projected) |",
+                    "| --- | ---: | ---: |",
+                    f"| Duration (s) | {baseline.get('duration_seconds', 0)} | {projected.get('duration_seconds', 0)} |",
+                    f"| Cost (USD) | {baseline.get('cost_usd', 0)} | {projected.get('cost_usd', 0)} |",
+                    f"| CO2 (kg) | {baseline.get('co2_kg', 0)} | {projected.get('co2_kg', 0)} |",
+                ])
         Path(args.markdown).write_text("\n".join(lines))
         print(f"\n📝 Wrote markdown report to {args.markdown}")
 
@@ -421,7 +453,7 @@ def cmd_optimize(args):
     workflow_yaml = provider.get_workflow_content(repo, workflow_path, args.ref)
 
     if hasattr(provider, "optimize_workflow_with_metadata"):
-        optimization = provider.optimize_workflow_with_metadata(workflow_yaml)
+        optimization = provider.optimize_workflow_with_metadata(workflow_yaml, workflow_path=workflow_path)
         optimized = optimization.get("optimized_workflow", workflow_yaml)
         changes = optimization.get("changes", [])
         fixes = optimization.get("fixes", [])
@@ -447,6 +479,13 @@ def cmd_optimize(args):
         Path(args.out).write_text(optimized)
         payload["output_file"] = args.out
 
+    if args.patch_file and diff_text:
+        Path(args.patch_file).write_text(diff_text)
+        payload["patch_file"] = args.patch_file
+
+    if args.deterministic_patch and diff_text:
+        payload["deterministic_patch"] = diff_text
+
     if args.json:
         payload["optimized_workflow"] = optimized
         print(json.dumps(payload, indent=2))
@@ -467,11 +506,13 @@ def cmd_optimize(args):
 
     if args.out:
         print(f"\n✅ Wrote optimized workflow to {args.out}")
-    else:
+    if args.patch_file and diff_text:
+        print(f"✅ Wrote unified patch to {args.patch_file}")
+    if not args.out:
         print("\n--- Optimized workflow preview ---\n")
         print(optimized)
 
-    if args.show_diff and diff_text:
+    if (args.show_diff or args.deterministic_patch) and diff_text:
         print("\n--- Unified diff preview ---\n")
         print(diff_text)
 
@@ -496,7 +537,7 @@ def cmd_pr(args):
     workflow_path = _pick_workflow(provider, repo, base_branch, args.workflow)
     workflow_yaml = provider.get_workflow_content(repo, workflow_path, base_branch)
     if hasattr(provider, "optimize_workflow_with_metadata"):
-        optimization = provider.optimize_workflow_with_metadata(workflow_yaml)
+        optimization = provider.optimize_workflow_with_metadata(workflow_yaml, workflow_path=workflow_path)
         optimized = optimization.get("optimized_workflow", workflow_yaml)
         changes = optimization.get("changes", [])
         fixes = optimization.get("fixes", [])
@@ -505,6 +546,13 @@ def cmd_pr(args):
         optimized, changes = provider.optimize_workflow(workflow_yaml)
         fixes = []
         diff_text = ""
+
+    metrics = None
+    if args.run_id:
+        jobs = provider.get_run_jobs(repo, args.run_id)
+        metrics = provider.compute_run_metrics(jobs)
+
+    kpi_impact = provider.estimate_kpi_impact(changes, metrics)
 
     body_lines = [
         "## EcoCI Optimization Summary",
@@ -527,14 +575,27 @@ def cmd_pr(args):
     body_lines.extend([
         "",
         "### Expected impact",
-        "- Faster average workflow completion due to improved caching and execution controls",
-        "- Lower wasted CI minutes by canceling superseded runs",
-        "- Better governance via explicit workflow defaults",
+        f"- Estimated duration improvement: {kpi_impact.get('estimated_improvements', {}).get('duration_percent', 0)}%",
+        f"- Estimated cost improvement: {kpi_impact.get('estimated_improvements', {}).get('cost_percent', 0)}%",
+        f"- Estimated CO2 improvement: {kpi_impact.get('estimated_improvements', {}).get('co2_percent', 0)}%",
         "",
         "### Rollback plan",
         f"- Revert {workflow_path} to the previous commit if any regression is observed",
         "- Re-run CI to verify baseline behavior is restored",
     ])
+
+    baseline = kpi_impact.get("baseline")
+    projected = kpi_impact.get("projected")
+    if baseline and projected:
+        body_lines.extend([
+            "",
+            "### Before/After KPI Projection",
+            "| KPI | Before | After (Projected) |",
+            "| --- | ---: | ---: |",
+            f"| Duration (s) | {baseline.get('duration_seconds', 0)} | {projected.get('duration_seconds', 0)} |",
+            f"| Cost (USD) | {baseline.get('cost_usd', 0)} | {projected.get('cost_usd', 0)} |",
+            f"| CO2 (kg) | {baseline.get('co2_kg', 0)} | {projected.get('co2_kg', 0)} |",
+        ])
 
     if diff_text:
         body_lines.extend([
@@ -566,6 +627,7 @@ def cmd_pr(args):
             "commit_message": args.commit_message,
             "changes": changes,
             "body": pr_body,
+            "kpi_impact": kpi_impact,
         }
         if args.json:
             print(json.dumps(payload, indent=2))
@@ -589,10 +651,7 @@ def cmd_pr(args):
         commit_message=args.commit_message,
     )
 
-    metrics = None
-    if args.run_id:
-        jobs = provider.get_run_jobs(repo, args.run_id)
-        metrics = provider.compute_run_metrics(jobs)
+    if args.run_id and metrics:
         pr_number = result.get("pull_request", {}).get("number")
         if pr_number:
             dashboard = provider.build_dashboard_markdown(repo, workflow_path, args.run_id, metrics)

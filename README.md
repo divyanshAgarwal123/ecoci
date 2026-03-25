@@ -236,6 +236,9 @@ ecoci optimize --provider github --json
 # Generate optimization plus unified diff preview
 ecoci optimize --provider github --show-diff
 
+# Generate deterministic patch for CI bot consumption
+ecoci optimize --provider github --deterministic-patch --patch-file ecoci.patch
+
 # Write optimized workflow to a file
 ecoci optimize --provider github --workflow .github/workflows/test.yml --out optimized-workflow.yml
 
@@ -265,6 +268,12 @@ Phase 2.1 enhancements now included in `analyze` output:
 - Prioritized fix list with severity + confidence + score
 - Expanded GitHub Actions security checks (permissions, `pull_request_target`, secret exposure patterns)
 - More realistic run energy estimates using runner metadata when available
+
+Phase 2.3 enhancements now included:
+
+- Deterministic patch output mode for CI bots (`ecoci optimize --deterministic-patch`)
+- Unified patch file export via `--patch-file`
+- Before/after KPI projection blocks in markdown reports and PR body
 
 ### C) Webhook/server mode
 

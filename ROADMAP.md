@@ -83,6 +83,13 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
 - Added one-click dashboard actions for Analyze, Optimize, and PR Dry Run.
 - Surfaced findings, prioritized fixes, quality gate, and key metrics directly in extension UI.
 
+### Phase 2.3 (Current increment)
+
+- Added deterministic unified patch mode for CI bots (`optimize --deterministic-patch`).
+- Added patch export option (`optimize --patch-file`) for automation workflows.
+- Added heuristic before/after KPI projection in markdown reports.
+- Added before/after KPI projection section to generated PR body.
+
 ---
 
 ## Phase 3: VS Code extension GA

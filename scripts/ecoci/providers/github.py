@@ -557,7 +557,7 @@ class GitHubProvider(CIProvider):
         optimized = yaml.safe_dump(data, sort_keys=False)
         return optimized, changes
 
-    def optimize_workflow_with_metadata(self, workflow_yaml: str) -> Dict[str, Any]:
+    def optimize_workflow_with_metadata(self, workflow_yaml: str, workflow_path: str = "workflow.yml") -> Dict[str, Any]:
         """Return optimized workflow with confidence-scored fixes and diff preview."""
         optimized, changes = self.optimize_workflow(workflow_yaml)
 
@@ -584,13 +584,75 @@ class GitHubProvider(CIProvider):
                 }
             )
 
-        diff_text = self.build_unified_diff(workflow_yaml, optimized)
+        diff_text = self.build_unified_diff(
+            workflow_yaml,
+            optimized,
+            before_name=workflow_path,
+            after_name=f"{workflow_path}.optimized",
+        )
         return {
             "optimized_workflow": optimized,
             "changes": changes,
             "fixes": fixes,
             "diff": diff_text,
         }
+
+    @staticmethod
+    def estimate_kpi_impact(changes: List[str], baseline_metrics: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Heuristic projection of KPI improvements from optimization changes."""
+        speed_gain_pct = 0.0
+        cost_gain_pct = 0.0
+        co2_gain_pct = 0.0
+
+        for c in changes:
+            lc = c.lower()
+            if "cache" in lc:
+                speed_gain_pct += 12.0
+                cost_gain_pct += 10.0
+                co2_gain_pct += 10.0
+            elif "concurrency" in lc:
+                speed_gain_pct += 6.0
+                cost_gain_pct += 8.0
+                co2_gain_pct += 8.0
+            elif "timeout-minutes" in lc:
+                speed_gain_pct += 2.0
+                cost_gain_pct += 3.0
+                co2_gain_pct += 3.0
+
+        speed_gain_pct = min(speed_gain_pct, 40.0)
+        cost_gain_pct = min(cost_gain_pct, 35.0)
+        co2_gain_pct = min(co2_gain_pct, 35.0)
+
+        result: Dict[str, Any] = {
+            "assumptions": "Heuristic estimate derived from optimization categories (cache/concurrency/timeout)",
+            "estimated_improvements": {
+                "duration_percent": round(speed_gain_pct, 1),
+                "cost_percent": round(cost_gain_pct, 1),
+                "co2_percent": round(co2_gain_pct, 1),
+            },
+        }
+
+        if baseline_metrics:
+            base_duration = float(baseline_metrics.get("total_duration_seconds", 0.0) or 0.0)
+            base_cost = float(baseline_metrics.get("total_cost_usd", 0.0) or 0.0)
+            base_co2 = float(baseline_metrics.get("total_co2_kg", 0.0) or 0.0)
+
+            projected_duration = base_duration * (1.0 - speed_gain_pct / 100.0)
+            projected_cost = base_cost * (1.0 - cost_gain_pct / 100.0)
+            projected_co2 = base_co2 * (1.0 - co2_gain_pct / 100.0)
+
+            result["baseline"] = {
+                "duration_seconds": round(base_duration, 2),
+                "cost_usd": round(base_cost, 4),
+                "co2_kg": round(base_co2, 4),
+            }
+            result["projected"] = {
+                "duration_seconds": round(projected_duration, 2),
+                "cost_usd": round(projected_cost, 4),
+                "co2_kg": round(projected_co2, 4),
+            }
+
+        return result
 
     @staticmethod
     def build_unified_diff(before_text: str, after_text: str, before_name: str = "before.yml", after_name: str = "after.yml") -> str:
