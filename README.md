@@ -284,10 +284,19 @@ Contributed commands:
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
 - Release checklist: [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)
 - VSIX packaging script: [scripts/package_vscode_extension.sh](scripts/package_vscode_extension.sh)
+- Release artifact builder: [scripts/build_release_artifacts.sh](scripts/build_release_artifacts.sh)
+- GitHub release workflow: [.github/workflows/release.yml](.github/workflows/release.yml)
 
 ```bash
 # Package VS Code extension artifact (.vsix)
 bash scripts/package_vscode_extension.sh
+
+# Build release artifacts locally (wheel + sdist + VSIX)
+bash scripts/build_release_artifacts.sh
+
+# Create release by pushing a tag (GitHub Actions will publish artifacts)
+git tag v0.1.3
+git push github v0.1.3
 ```
 
 ---

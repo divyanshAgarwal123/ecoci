@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+- GitHub tag-triggered release workflow in [.github/workflows/release.yml](.github/workflows/release.yml).
+- Unified artifact build script in [scripts/build_release_artifacts.sh](scripts/build_release_artifacts.sh).
+- Extension packaging metadata files:
+  - [vscode-extensions/ecoci-vscode/README.md](vscode-extensions/ecoci-vscode/README.md)
+  - [vscode-extensions/ecoci-vscode/LICENSE](vscode-extensions/ecoci-vscode/LICENSE)
+
 ## [0.1.2] - 2026-03-26
 
 ### Added

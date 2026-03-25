@@ -43,6 +43,12 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
   - Add dynamic `ecoci version` resolution from package metadata.
   - Add VSIX packaging script scaffold for extension releases.
 
+  ### Phase 1.3 (Current): Release automation
+
+  - Add GitHub Actions release workflow for tag-based publishing.
+  - Build and attach wheel/sdist/VSIX artifacts to GitHub Releases.
+  - Add extension release metadata files required by packaging tooling.
+
 ---
 
 ## Phase 2: Optimization quality and safety
