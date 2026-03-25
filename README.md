@@ -285,6 +285,7 @@ A lightweight VS Code extension wrapper is included:
 
 - [vscode-extensions/ecoci-vscode/package.json](vscode-extensions/ecoci-vscode/package.json)
 - [vscode-extensions/ecoci-vscode/src/extension.js](vscode-extensions/ecoci-vscode/src/extension.js)
+- [vscode-extensions/ecoci-vscode/media/leaf.svg](vscode-extensions/ecoci-vscode/media/leaf.svg)
 
 Contributed commands:
 
@@ -292,6 +293,12 @@ Contributed commands:
 - `EcoCI: Optimize CI Workflows`
 - `EcoCI: Create Optimization PR`
 - `EcoCI: Show Carbon & Cost Summary`
+
+Dashboard UX (Phase 2.2):
+
+- Activity Bar **EcoCI** view with interactive actions
+- In-editor summary of findings, prioritized fixes, and quality gate
+- PR dry-run preview surfaced directly in dashboard panel
 
 ### E) Product roadmap + website scaffold
 

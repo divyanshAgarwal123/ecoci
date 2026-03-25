@@ -18,6 +18,10 @@
   "contributes": {
     "commands": [
       {
+        "command": "ecoci.openDashboard",
+        "title": "EcoCI: Open Dashboard"
+      },
+      {
         "command": "ecoci.analyzeRepo",
         "title": "EcoCI: Analyze Current Repo"
       },
@@ -33,7 +37,26 @@
         "command": "ecoci.showCarbonCostSummary",
         "title": "EcoCI: Show Carbon & Cost Summary"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ecoci",
+          "title": "EcoCI",
+          "icon": "media/leaf.svg"
+        }
+      ]
+    },
+    "views": {
+      "ecoci": [
+        {
+          "id": "ecoci.dashboard",
+          "name": "Dashboard",
+          "type": "webview",
+          "icon": "media/leaf.svg"
+        }
+      ]
+    }
   },
   "scripts": {
     "build": "echo 'No build step required for JS MVP extension'"

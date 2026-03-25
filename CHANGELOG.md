@@ -13,9 +13,12 @@ All notable changes to this project are documented in this file.
 - Workflow quality gate output (`pass` / `warn` / `fail`) with critical/high counts.
 - Prioritized recommendation list in analysis output with severity/confidence scoring.
 - Expanded hardening checks for `write-all` permissions, `pull_request_target`, persisted checkout credentials, and potential secret exposure patterns.
+- VS Code extension Activity Bar dashboard view with interactive Analyze/Optimize/PR dry-run actions.
+- Extension dashboard visualization for findings, quality gate, prioritized fixes, and key run metrics.
 
 ### Changed
 - Run metric estimation now uses runner metadata heuristics (estimated core count + OS multiplier) for improved energy realism.
+- VS Code extension UX upgraded from markdown-only command output to panel-based workflow insights.
 
 ## [0.1.3] - 2026-03-26
 

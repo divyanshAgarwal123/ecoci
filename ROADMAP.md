@@ -76,6 +76,13 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
   - potential secret echo and hardcoded credential pattern detection
 - Improved run metric realism with runner-core and OS-aware energy estimation.
 
+### Phase 2.2 (Current increment)
+
+- Upgraded VS Code extension from command-only output to dashboard UX.
+- Added Activity Bar EcoCI container + webview dashboard panel.
+- Added one-click dashboard actions for Analyze, Optimize, and PR Dry Run.
+- Surfaced findings, prioritized fixes, quality gate, and key metrics directly in extension UI.
+
 ---
 
 ## Phase 3: VS Code extension GA
