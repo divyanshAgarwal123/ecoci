@@ -53,6 +53,35 @@ GitLab:  https://gitlab.com/gitlab-ai-hackathon/participants/34560917
     sec_parser = subparsers.add_parser("security", help="Scan CI config for secrets & dangerous patterns")
     sec_parser.add_argument("file", nargs="?", help="CI config file to scan (any CI system)")
     sec_parser.add_argument("--logs", help="Job log file to scan for leaked secrets")
+
+    # ─── analyze (GitHub-first universal flow) ───
+    analyze_parser = subparsers.add_parser("analyze", help="Analyze CI workflow on a provider (default: GitHub)")
+    analyze_parser.add_argument("--provider", default="github", choices=["github"], help="CI provider")
+    analyze_parser.add_argument("--repo", help="Repository as owner/repo (auto-detected from git remote if omitted)")
+    analyze_parser.add_argument("--ref", default="main", help="Git ref (branch/tag) for reading workflow files")
+    analyze_parser.add_argument("--workflow", help="Workflow path (e.g., .github/workflows/test.yml). Defaults to first found.")
+    analyze_parser.add_argument("--run-id", type=int, help="GitHub Actions run ID for real job duration data")
+    analyze_parser.add_argument("--json", action="store_true", help="Output JSON")
+
+    # ─── optimize (GitHub-first universal flow) ───
+    optimize_parser = subparsers.add_parser("optimize", help="Generate optimized workflow YAML")
+    optimize_parser.add_argument("--provider", default="github", choices=["github"], help="CI provider")
+    optimize_parser.add_argument("--repo", help="Repository as owner/repo (auto-detected if omitted)")
+    optimize_parser.add_argument("--ref", default="main", help="Git ref (branch/tag)")
+    optimize_parser.add_argument("--workflow", help="Workflow path to optimize")
+    optimize_parser.add_argument("--out", help="Output file path for optimized YAML")
+    optimize_parser.add_argument("--json", action="store_true", help="Output JSON")
+
+    # ─── pr (GitHub-first universal flow) ───
+    pr_parser = subparsers.add_parser("pr", help="Create optimization pull request (GitHub)")
+    pr_parser.add_argument("--provider", default="github", choices=["github"], help="CI provider")
+    pr_parser.add_argument("--repo", help="Repository as owner/repo (auto-detected if omitted)")
+    pr_parser.add_argument("--base", help="Base branch (defaults to repository default branch)")
+    pr_parser.add_argument("--branch", default="ecoci/optimize-workflow", help="PR source branch")
+    pr_parser.add_argument("--workflow", help="Workflow path to optimize and commit")
+    pr_parser.add_argument("--title", default="EcoCI: Optimize GitHub Actions workflow", help="Pull request title")
+    pr_parser.add_argument("--commit-message", default="chore(ci): optimize workflow with EcoCI", help="Commit message")
+    pr_parser.add_argument("--json", action="store_true", help="Output JSON")
     
     # ─── cost ───
     cost_parser = subparsers.add_parser("cost", help="Calculate pipeline cost")
@@ -105,6 +134,9 @@ GitLab:  https://gitlab.com/gitlab-ai-hackathon/participants/34560917
     
     # Route to handlers
     handlers = {
+        "analyze": cmd_analyze,
+        "optimize": cmd_optimize,
+        "pr": cmd_pr,
         "security": cmd_security,
         "cost": cmd_cost,
         "dora": cmd_dora,
@@ -144,6 +176,158 @@ def cmd_security(args):
     else:
         print("❌ Please provide a CI config file: ecoci security .gitlab-ci.yml")
         print("   Also works with: .github/workflows/ci.yml, Jenkinsfile, etc.")
+
+
+def _resolve_repo(repo_arg: Optional[str]) -> str:
+    from ecoci.providers.github import GitHubProvider
+
+    repo = repo_arg or GitHubProvider.infer_repo_from_git()
+    if not repo:
+        raise RuntimeError("Repository not provided and could not be inferred. Use --repo owner/repo")
+    return repo
+
+
+def _pick_workflow(provider, repo: str, ref: str, workflow: Optional[str]) -> str:
+    if workflow:
+        return workflow
+    workflows = provider.list_workflow_files(repo, ref)
+    if not workflows:
+        raise RuntimeError(f"No GitHub workflow files found in {repo} at ref {ref}")
+    return workflows[0]
+
+
+def cmd_analyze(args):
+    from ecoci.providers.github import GitHubProvider
+
+    provider = GitHubProvider()
+    repo = _resolve_repo(args.repo)
+    workflow_path = _pick_workflow(provider, repo, args.ref, args.workflow)
+    workflow_yaml = provider.get_workflow_content(repo, workflow_path, args.ref)
+
+    run_jobs = None
+    if args.run_id:
+        run_jobs = provider.get_run_jobs(repo, args.run_id)
+
+    analysis = provider.analyze_workflow(workflow_yaml, run_jobs=run_jobs)
+    payload = {
+        "provider": "github",
+        "repo": repo,
+        "ref": args.ref,
+        "workflow": workflow_path,
+        "analysis": analysis,
+    }
+
+    if args.json:
+        print(json.dumps(payload, indent=2))
+        return
+
+    print("🔍 EcoCI Workflow Analysis\n")
+    print(f"  Repo:       {repo}")
+    print(f"  Workflow:   {workflow_path}")
+    print(f"  Job count:  {analysis.get('job_count', 0)}")
+    if analysis.get("observed_total_duration_seconds"):
+        print(f"  Observed duration: {analysis['observed_total_duration_seconds']}s")
+
+    issues = analysis.get("issues", [])
+    recs = analysis.get("recommendations", [])
+    print(f"\n  Issues: {len(issues)}")
+    for i in issues:
+        print(f"    - {i}")
+    print(f"\n  Recommendations: {len(recs)}")
+    for r in recs:
+        print(f"    - {r}")
+
+
+def cmd_optimize(args):
+    from ecoci.providers.github import GitHubProvider
+
+    provider = GitHubProvider()
+    repo = _resolve_repo(args.repo)
+    workflow_path = _pick_workflow(provider, repo, args.ref, args.workflow)
+    workflow_yaml = provider.get_workflow_content(repo, workflow_path, args.ref)
+
+    optimized, changes = provider.optimize_workflow(workflow_yaml)
+    payload = {
+        "provider": "github",
+        "repo": repo,
+        "ref": args.ref,
+        "workflow": workflow_path,
+        "changes": changes,
+    }
+
+    if args.out:
+        Path(args.out).write_text(optimized)
+        payload["output_file"] = args.out
+
+    if args.json:
+        payload["optimized_workflow"] = optimized
+        print(json.dumps(payload, indent=2))
+        return
+
+    print("⚡ EcoCI Workflow Optimization\n")
+    print(f"  Repo:       {repo}")
+    print(f"  Workflow:   {workflow_path}")
+    print(f"  Changes:    {len(changes)}")
+    for c in changes:
+        print(f"    - {c}")
+
+    if args.out:
+        print(f"\n✅ Wrote optimized workflow to {args.out}")
+    else:
+        print("\n--- Optimized workflow preview ---\n")
+        print(optimized)
+
+
+def cmd_pr(args):
+    from ecoci.providers.github import GitHubProvider
+
+    provider = GitHubProvider()
+    repo = _resolve_repo(args.repo)
+
+    base_branch = args.base or provider.get_default_branch(repo)
+    workflow_path = _pick_workflow(provider, repo, base_branch, args.workflow)
+    workflow_yaml = provider.get_workflow_content(repo, workflow_path, base_branch)
+    optimized, changes = provider.optimize_workflow(workflow_yaml)
+
+    body_lines = [
+        "## EcoCI Optimization Summary",
+        "",
+        "Automated GitHub Actions workflow improvements:",
+        "",
+    ]
+    for c in changes:
+        body_lines.append(f"- {c}")
+    if not changes:
+        body_lines.append("- No structural changes required")
+
+    body_lines.extend([
+        "",
+        "Generated by EcoCI CLI.",
+    ])
+    pr_body = "\n".join(body_lines)
+
+    result = provider.create_optimization_pr(
+        repo=repo,
+        workflow_path=workflow_path,
+        optimized_content=optimized,
+        base_branch=base_branch,
+        branch=args.branch,
+        title=args.title,
+        body=pr_body,
+        commit_message=args.commit_message,
+    )
+
+    if args.json:
+        print(json.dumps(result, indent=2))
+        return
+
+    pr = result.get("pull_request", {})
+    print("✅ Pull request created")
+    print(f"  Repo:      {repo}")
+    print(f"  Workflow:  {workflow_path}")
+    print(f"  Base:      {base_branch}")
+    print(f"  Branch:    {args.branch}")
+    print(f"  URL:       {pr.get('html_url', 'N/A')}")
 
 
 def cmd_cost(args):
