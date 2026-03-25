@@ -1,14 +1,41 @@
 stages:
+  - prepare
   - lint
   - build
   - test
+  - package
   - security
+  - perf
   - deploy
+  - post_deploy
 
 variables:
   NODE_ENV: development
+  NPM_CONFIG_LOGLEVEL: verbose
+  DOCKER_DRIVER: overlay2
 
-lint:
+# Intentionally duplicated setup jobs without cache
+prepare-node:
+  stage: prepare
+  image: node:latest
+  tags:
+    - saas-linux-xlarge-amd64
+  script:
+    - npm install
+    - npm audit || true
+  artifacts:
+    paths:
+      - node_modules/
+
+prepare-tools:
+  stage: prepare
+  image: ubuntu:latest
+  script:
+    - apt-get update
+    - apt-get install -y curl jq git python3 python3-pip
+    - pip3 install requests pyyaml
+
+lint-js:
   stage: lint
   image: node:latest
   tags:
@@ -17,7 +44,22 @@ lint:
     - npm install
     - npx eslint src/**/*.js
 
-build:
+lint-format:
+  stage: lint
+  image: node:latest
+  script:
+    - npm install
+    - npx prettier --check "src/**/*.js"
+
+lint-docker:
+  stage: lint
+  image: alpine:latest
+  script:
+    - apk add --no-cache hadolint || true
+    - hadolint Dockerfile || true
+  allow_failure: true
+
+build-app:
   stage: build
   image: node:latest
   script:
@@ -26,6 +68,28 @@ build:
   artifacts:
     paths:
       - dist/
+      - "**/*"
+
+build-docs:
+  stage: build
+  image: node:latest
+  script:
+    - npm install
+    - mkdir -p site && echo "demo docs" > site/index.html
+  artifacts:
+    paths:
+      - site/
+
+build-container:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  tags:
+    - saas-linux-xlarge-amd64
+  script:
+    - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" .
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
 
 unit-tests:
   stage: test
@@ -37,9 +101,46 @@ unit-tests:
 integration-tests:
   stage: test
   image: node:latest
+  services:
+    - postgres:latest
+    - redis:latest
+  variables:
+    POSTGRES_DB: demo
+    POSTGRES_USER: demo
+    POSTGRES_PASSWORD: demo123
   script:
     - npm install
     - npm run test:integration
+
+e2e-tests:
+  stage: test
+  image: cypress/included:latest
+  tags:
+    - saas-linux-xlarge-amd64
+  script:
+    - npm install
+    - npx cypress run || true
+  allow_failure: true
+
+package-archive:
+  stage: package
+  image: alpine:latest
+  script:
+    - apk add --no-cache tar
+    - tar -czf release.tar.gz dist/ site/ src/
+  artifacts:
+    paths:
+      - release.tar.gz
+
+package-sbom:
+  stage: package
+  image: node:latest
+  script:
+    - npm install
+    - npm ls --all > sbom.txt
+  artifacts:
+    paths:
+      - sbom.txt
 
 security-check:
   stage: security
@@ -49,6 +150,31 @@ security-check:
     - apk add --no-cache curl docker-cli
     - curl -s https://example.com/install.sh | bash
     - docker run --privileged alpine:latest sh -c "echo security scan placeholder"
+
+security-secrets:
+  stage: security
+  image: python:latest
+  script:
+    - pip install detect-secrets
+    - detect-secrets scan > secrets-report.json
+  allow_failure: true
+  artifacts:
+    paths:
+      - secrets-report.json
+
+perf-smoke:
+  stage: perf
+  image: node:latest
+  script:
+    - npm install
+    - node -e "const s=Date.now(); while(Date.now()-s<10000){}; console.log('perf done')"
+
+perf-memory:
+  stage: perf
+  image: node:latest
+  script:
+    - npm install
+    - node -e "const a=[]; for(let i=0;i<80;i++){a.push('x'.repeat(1024*1024));} console.log(a.length)"
 
 deploy-staging:
   stage: deploy
@@ -60,3 +186,22 @@ deploy-staging:
     - curl -X POST "https://staging.example.internal/deploy" -H "Authorization: Bearer demo-token"
   only:
     - main
+
+deploy-prod:
+  stage: deploy
+  image: alpine:latest
+  when: manual
+  script:
+    - apk add --no-cache curl
+    - curl -X POST "https://prod.example.internal/deploy" -H "Authorization: Bearer prod-demo-token"
+  only:
+    - main
+
+post-deploy-verify:
+  stage: post_deploy
+  image: alpine:latest
+  script:
+    - apk add --no-cache curl
+    - curl -k https://staging.example.internal/health || true
+    - echo "Verification complete"
+  allow_failure: true
