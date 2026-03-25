@@ -31,6 +31,12 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
   - `ecoci optimize --provider github`
   - `ecoci pr create --provider github --dry-run`
 
+  ### Phase 1.1 (Current): Distribution onboarding
+
+  - Add website download/install matrix for CLI + VS Code extension MVP.
+  - Add quick verification command set for first-time users.
+  - Link homepage to downloads and release sources.
+
 ---
 
 ## Phase 2: Optimization quality and safety

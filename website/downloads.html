@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoCI Downloads</title>
+  <style>
+    body { font-family: Inter, system-ui, sans-serif; margin: 0; background: #0b1020; color: #eaf0ff; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 48px 20px; }
+    h1 { font-size: 2rem; margin-bottom: 8px; }
+    .muted { color: #a7b4d4; }
+    .card { background: #151c34; border: 1px solid #27325b; border-radius: 12px; padding: 18px; margin-top: 16px; }
+    code { background: #0c1330; padding: 2px 6px; border-radius: 6px; }
+    a { color: #91b6ff; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border-bottom: 1px solid #27325b; padding: 10px 8px; text-align: left; vertical-align: top; }
+    th { color: #b8c8f2; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>EcoCI Downloads & Install</h1>
+    <p class="muted">Phase 1.1 install matrix for CLI and VS Code extension adoption.</p>
+
+    <section class="card">
+      <h2>Install matrix</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Surface</th>
+            <th>Install</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CLI (recommended)</td>
+            <td><code>pipx install ecoci</code></td>
+            <td>Best for isolated global install.</td>
+          </tr>
+          <tr>
+            <td>CLI (pip)</td>
+            <td><code>pip install ecoci</code></td>
+            <td>Use virtualenv/venv in projects.</td>
+          </tr>
+          <tr>
+            <td>CLI (from source)</td>
+            <td><code>pip install -e .</code></td>
+            <td>For contributors and local development.</td>
+          </tr>
+          <tr>
+            <td>VS Code extension (MVP)</td>
+            <td>Load folder <code>vscode-extensions/ecoci-vscode</code> in VS Code Extension Development Host</td>
+            <td>Marketplace packaging planned for later phase.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Quick verification</h2>
+      <ul>
+        <li><code>ecoci version</code></li>
+        <li><code>ecoci doctor --provider github</code></li>
+        <li><code>ecoci analyze --provider github --json</code></li>
+        <li><code>ecoci pr create --provider github --dry-run</code></li>
+      </ul>
+      <p>For GitHub PR creation, set <code>GITHUB_TOKEN</code>.</p>
+    </section>
+
+    <section class="card">
+      <h2>Source and releases</h2>
+      <p>
+        <a href="https://github.com/divyanshAgarwal123/ecoci">Repository</a><br/>
+        <a href="https://github.com/divyanshAgarwal123/ecoci/releases">Releases</a>
+      </p>
+      <p><a href="./index.html">← Back to homepage</a></p>
+    </section>
+  </main>
+</body>
+</html>

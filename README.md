@@ -277,6 +277,7 @@ Contributed commands:
 
 - Product roadmap: [ROADMAP.md](ROADMAP.md)
 - Website scaffold: [website/index.html](website/index.html)
+- Downloads/install matrix: [website/downloads.html](website/downloads.html)
 
 ---
 
