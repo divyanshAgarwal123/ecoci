@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoCI Quickstart</title>
+  <style>
+    :root {
+      --bg: #090e1a;
+      --panel: #121a31;
+      --border: #293861;
+      --text: #eaf0ff;
+      --muted: #b0bddf;
+      --brand: #7ec6ff;
+      --brand-2: #88f7d2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+      background: radial-gradient(900px 500px at 85% -15%, rgba(126, 198, 255, 0.12), transparent), var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 28px 20px 42px; }
+    .top { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+    h1 { margin: 0 0 6px; font-size: 2rem; }
+    .muted { color: var(--muted); }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 13px; padding: 16px; margin-top: 14px; }
+    .btn, .btn-ghost { text-decoration: none; border-radius: 10px; padding: 8px 12px; font-weight: 600; display: inline-block; }
+    .btn { background: linear-gradient(90deg, var(--brand), var(--brand-2)); color: #081027; }
+    .btn-ghost { border: 1px solid var(--border); color: var(--text); }
+    pre { margin: 8px 0 0; background: #0a132c; border: 1px solid #1b2b58; border-radius: 10px; padding: 10px; overflow-x: auto; }
+    code { background: #0a132c; border: 1px solid #1b2b58; padding: 2px 6px; border-radius: 6px; }
+    a { color: #9bc4ff; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="top">
+      <div>
+        <h1>EcoCI Quickstart</h1>
+        <p class="muted">Install, verify, analyze, optimize, and create a safe PR in under 5 minutes.</p>
+      </div>
+      <div>
+        <a class="btn-ghost" href="./index.html">Home</a>
+        <a class="btn-ghost" href="./downloads.html">Downloads</a>
+        <a class="btn" href="https://github.com/divyanshAgarwal123/ecoci">Repository</a>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>1) Install</h2>
+      <pre>pipx install ecoci
+# or
+pip install ecoci</pre>
+    </section>
+
+    <section class="card">
+      <h2>2) Set GitHub token</h2>
+      <p>Required for write operations like creating PRs.</p>
+      <pre>export GITHUB_TOKEN=&lt;your_token&gt;</pre>
+    </section>
+
+    <section class="card">
+      <h2>3) Verify setup</h2>
+      <pre>ecoci version
+ecoci doctor --provider github</pre>
+    </section>
+
+    <section class="card">
+      <h2>4) Analyze and optimize</h2>
+      <pre>ecoci analyze --provider github --json
+ecoci optimize --provider github --show-diff
+ecoci optimize --provider github --deterministic-patch --patch-file ecoci.patch</pre>
+    </section>
+
+    <section class="card">
+      <h2>5) Create optimization PR safely</h2>
+      <pre>ecoci pr create --provider github --dry-run --json
+# when ready
+ecoci pr create --provider github --title "EcoCI: Optimize workflow"</pre>
+    </section>
+
+    <section class="card">
+      <h2>VS Code dashboard flow</h2>
+      <ul>
+        <li>Open Activity Bar → <strong>EcoCI</strong></li>
+        <li>Click <strong>Analyze</strong> to load findings and quality gate</li>
+        <li>Click <strong>Optimize</strong> to preview changes</li>
+        <li>Click <strong>PR Dry Run</strong> to preview PR payload</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

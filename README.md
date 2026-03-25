@@ -314,6 +314,7 @@ Dashboard UX (Phase 2.2):
 - Product roadmap: [ROADMAP.md](ROADMAP.md)
 - Website landing page: [website/index.html](website/index.html)
 - Downloads/install matrix: [website/downloads.html](website/downloads.html)
+- Guided quickstart: [website/quickstart.html](website/quickstart.html)
 
 Website now includes:
 

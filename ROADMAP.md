@@ -119,6 +119,12 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
 - Expanded downloads page with direct artifact guidance (wheel/sdist/VSIX).
 - Added quick verification paths for both CLI and VS Code dashboard workflows.
 
+### Phase 4.2 (Current increment)
+
+- Added dedicated website quickstart page for first-run onboarding.
+- Linked quickstart from homepage and downloads pages.
+- Added install → analyze → optimize → PR flow in one guided sequence.
+
 ---
 
 ## Phase 5: Multi-provider expansion
