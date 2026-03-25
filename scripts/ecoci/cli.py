@@ -323,6 +323,8 @@ def cmd_analyze(args):
     issues = analysis.get("issues", [])
     recs = analysis.get("recommendations", [])
     findings = analysis.get("findings", [])
+    ranked_recs = analysis.get("prioritized_recommendations", [])
+    quality_gate = analysis.get("quality_gate", {})
     print(f"\n  Issues: {len(issues)}")
     for i in issues:
         print(f"    - {i}")
@@ -335,6 +337,21 @@ def cmd_analyze(args):
         for f in findings:
             conf_pct = round(float(f.get("confidence", 0.0)) * 100)
             print(f"    - [{f.get('severity', 'info')}] {f.get('message')} (confidence: {conf_pct}%)")
+
+    if ranked_recs:
+        print("\n  Priority fixes")
+        for rec in ranked_recs[:5]:
+            conf_pct = round(float(rec.get("confidence", 0.0)) * 100)
+            print(
+                f"    - [{rec.get('severity', 'low')}] {rec.get('fix')} "
+                f"(confidence: {conf_pct}%, score: {rec.get('priority_score', 0)})"
+            )
+
+    if quality_gate:
+        print(
+            f"\n  Quality gate: {quality_gate.get('status', 'unknown').upper()} "
+            f"(critical={quality_gate.get('critical_count', 0)}, high={quality_gate.get('high_count', 0)})"
+        )
 
     if metrics:
         print("\n📊 Real run metrics")
@@ -363,9 +380,25 @@ def cmd_analyze(args):
                     f"- [{f.get('severity', 'info')}] {f.get('message')} "
                     f"→ {f.get('fix', 'N/A')} (confidence: {conf_pct}%)"
                 )
+        if ranked_recs:
+            lines.extend(["", "## Priority Fixes"])
+            for rec in ranked_recs[:8]:
+                conf_pct = round(float(rec.get("confidence", 0.0)) * 100)
+                lines.append(
+                    f"- [{rec.get('severity', 'low')}] {rec.get('fix')} "
+                    f"(confidence: {conf_pct}%, score: {rec.get('priority_score', 0)})"
+                )
         lines.extend(["", "## Recommendations"])
         for r in recs:
             lines.append(f"- {r}")
+        if quality_gate:
+            lines.extend([
+                "",
+                "## Quality Gate",
+                f"- Status: {quality_gate.get('status', 'unknown')}",
+                f"- Critical findings: {quality_gate.get('critical_count', 0)}",
+                f"- High findings: {quality_gate.get('high_count', 0)}",
+            ])
         if metrics:
             lines.extend([
                 "",

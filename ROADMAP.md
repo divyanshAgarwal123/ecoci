@@ -65,6 +65,17 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
 - Unified diff preview support via `ecoci optimize --show-diff`.
 - Structured PR body with impact section + rollback plan for safer PR review.
 
+### Phase 2.1 (Current increment)
+
+- Added workflow quality gate output (`pass` / `warn` / `fail`) based on finding severity.
+- Added prioritized fix list with severity + confidence scoring for faster triage.
+- Expanded GitHub workflow security checks:
+  - `write-all` and broad write permission detection
+  - `pull_request_target` risk flag
+  - `actions/checkout` persisted credential warning
+  - potential secret echo and hardcoded credential pattern detection
+- Improved run metric realism with runner-core and OS-aware energy estimation.
+
 ---
 
 ## Phase 3: VS Code extension GA

@@ -259,6 +259,13 @@ Phase 2.0 enhancements now included in CLI output:
 - Unified diff preview via `ecoci optimize --show-diff`
 - Structured PR body with expected impact + rollback plan in `pr create`
 
+Phase 2.1 enhancements now included in `analyze` output:
+
+- Workflow quality gate summary (`PASS`, `WARN`, `FAIL`)
+- Prioritized fix list with severity + confidence + score
+- Expanded GitHub Actions security checks (permissions, `pull_request_target`, secret exposure patterns)
+- More realistic run energy estimates using runner metadata when available
+
 ### C) Webhook/server mode
 
 Run as HTTP service:

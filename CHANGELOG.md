@@ -10,6 +10,12 @@ All notable changes to this project are documented in this file.
 - Unified diff preview support via `ecoci optimize --show-diff`.
 - Structured `ecoci pr create` body sections: improvements, expected impact, rollback plan.
 - Additional GitHub workflow security checks (permissions and risky `curl|shell` / `wget|shell` patterns).
+- Workflow quality gate output (`pass` / `warn` / `fail`) with critical/high counts.
+- Prioritized recommendation list in analysis output with severity/confidence scoring.
+- Expanded hardening checks for `write-all` permissions, `pull_request_target`, persisted checkout credentials, and potential secret exposure patterns.
+
+### Changed
+- Run metric estimation now uses runner metadata heuristics (estimated core count + OS multiplier) for improved energy realism.
 
 ## [0.1.3] - 2026-03-26
 
