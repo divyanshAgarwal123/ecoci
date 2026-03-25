@@ -24,6 +24,11 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+try:
+    from importlib.metadata import version as _pkg_version
+except Exception:  # pragma: no cover
+    _pkg_version = None
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -650,12 +655,36 @@ def cmd_report(args):
 
 
 def cmd_version(args):
-    print("EcoCI v1.0.0")
+    v = _resolve_version()
+    print(f"EcoCI v{v}")
     print("The most comprehensive AI CI/CD optimizer")
     print("Works with: GitLab CI, GitHub Actions, Jenkins, CircleCI, and more")
     print("")
     print("GitHub:  https://github.com/divyanshAgarwal123/ecoci")
     print("GitLab:  https://gitlab.com/gitlab-ai-hackathon/participants/34560917")
+
+
+def _resolve_version() -> str:
+    # Preferred: installed package metadata
+    if _pkg_version:
+        try:
+            return _pkg_version("ecoci")
+        except Exception:
+            pass
+
+    # Fallback: pyproject.toml in repo root
+    try:
+        root = Path(__file__).resolve().parents[2]
+        pyproject = root / "pyproject.toml"
+        if pyproject.exists():
+            for line in pyproject.read_text().splitlines():
+                line = line.strip()
+                if line.startswith("version") and "=" in line:
+                    return line.split("=", 1)[1].strip().strip('"')
+    except Exception:
+        pass
+
+    return "0.0.0"
 
 
 if __name__ == "__main__":

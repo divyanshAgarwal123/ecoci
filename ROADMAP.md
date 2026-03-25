@@ -37,6 +37,12 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
   - Add quick verification command set for first-time users.
   - Link homepage to downloads and release sources.
 
+  ### Phase 1.2 (Current): Release readiness
+
+  - Add changelog and structured release checklist.
+  - Add dynamic `ecoci version` resolution from package metadata.
+  - Add VSIX packaging script scaffold for extension releases.
+
 ---
 
 ## Phase 2: Optimization quality and safety

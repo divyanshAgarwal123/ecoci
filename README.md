@@ -279,6 +279,17 @@ Contributed commands:
 - Website scaffold: [website/index.html](website/index.html)
 - Downloads/install matrix: [website/downloads.html](website/downloads.html)
 
+### F) Release readiness assets
+
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
+- Release checklist: [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)
+- VSIX packaging script: [scripts/package_vscode_extension.sh](scripts/package_vscode_extension.sh)
+
+```bash
+# Package VS Code extension artifact (.vsix)
+bash scripts/package_vscode_extension.sh
+```
+
 ---
 
 ## 10) Validation and testing
