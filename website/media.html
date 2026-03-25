@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoCI Media Kit</title>
+  <style>
+    :root {
+      --bg: #090e1a;
+      --panel: #121a31;
+      --border: #293861;
+      --text: #eaf0ff;
+      --muted: #b0bddf;
+      --brand: #7ec6ff;
+      --brand-2: #88f7d2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+      background: radial-gradient(900px 500px at 85% -15%, rgba(126, 198, 255, 0.12), transparent), var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 28px 20px 42px; }
+    .top { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+    h1 { margin: 0 0 6px; font-size: 2rem; }
+    .muted { color: var(--muted); }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 13px; padding: 16px; margin-top: 14px; }
+    .btn, .btn-ghost { text-decoration: none; border-radius: 10px; padding: 8px 12px; font-weight: 600; display: inline-block; }
+    .btn { background: linear-gradient(90deg, var(--brand), var(--brand-2)); color: #081027; }
+    .btn-ghost { border: 1px solid var(--border); color: var(--text); }
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .placeholder {
+      border: 1px dashed #3b4f80;
+      border-radius: 10px;
+      padding: 18px;
+      background: #0a132c;
+      color: var(--muted);
+      text-align: center;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    code { background: #0a132c; border: 1px solid #1b2b58; padding: 2px 6px; border-radius: 6px; }
+    a { color: #9bc4ff; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="top">
+      <div>
+        <h1>EcoCI Media Kit</h1>
+        <p class="muted">Screenshots, demo assets, and recording checklist for release and showcasing.</p>
+      </div>
+      <div>
+        <a class="btn-ghost" href="./index.html">Home</a>
+        <a class="btn-ghost" href="./quickstart.html">Quickstart</a>
+        <a class="btn" href="https://github.com/divyanshAgarwal123/ecoci/releases">Release Assets</a>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Recommended screenshots</h2>
+        <ul>
+          <li>CLI analyze output with quality gate + prioritized fixes</li>
+          <li>CLI optimize output with unified diff preview</li>
+          <li>PR dry-run JSON payload preview</li>
+          <li>VS Code dashboard (Analyze/Optimize/PR Dry Run states)</li>
+          <li>Website landing + quickstart pages</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h2>Demo video flow (3-5 min)</h2>
+        <ol>
+          <li>Install + <code>ecoci doctor --provider github</code></li>
+          <li><code>ecoci analyze --provider github --json</code></li>
+          <li><code>ecoci optimize --provider github --show-diff</code></li>
+          <li><code>ecoci pr create --provider github --dry-run --json</code></li>
+          <li>Open VS Code dashboard and run Analyze</li>
+        </ol>
+      </article>
+    </section>
+
+    <section class="card">
+      <h2>Asset placeholders</h2>
+      <div class="grid">
+        <div class="placeholder">Screenshot Placeholder A: CLI Analyze</div>
+        <div class="placeholder">Screenshot Placeholder B: CLI Optimize Diff</div>
+        <div class="placeholder">Screenshot Placeholder C: VS Code Dashboard</div>
+        <div class="placeholder">Screenshot Placeholder D: Website Quickstart</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Where to store assets</h2>
+      <p class="muted">Recommended folder: <code>website/assets/</code> and link them from this page.</p>
+      <p>You can publish final media in GitHub release notes and repository docs.</p>
+      <p><a href="https://github.com/divyanshAgarwal123/ecoci">Repository</a></p>
+    </section>
+  </main>
+</body>
+</html>

@@ -316,6 +316,7 @@ Dashboard UX (Phase 2.2):
 - Downloads/install matrix: [website/downloads.html](website/downloads.html)
 - Guided quickstart: [website/quickstart.html](website/quickstart.html)
 - Command examples cookbook: [website/examples.html](website/examples.html)
+- Media kit and demo checklist: [website/media.html](website/media.html)
 
 Website now includes:
 

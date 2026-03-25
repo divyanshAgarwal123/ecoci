@@ -23,6 +23,7 @@ All notable changes to this project are documented in this file.
 - Added explicit CLI + VS Code dashboard verification flows in website docs.
 - Added dedicated quickstart website page with end-to-end onboarding flow.
 - Added website command examples cookbook page with troubleshooting notes.
+- Added media kit page with screenshot placeholders and demo recording checklist.
 
 ### Changed
 - Run metric estimation now uses runner metadata heuristics (estimated core count + OS multiplier) for improved energy realism.

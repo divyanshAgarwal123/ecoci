@@ -131,6 +131,12 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
 - Added troubleshooting tips for repo detection, token scope, and run metrics.
 - Linked examples page across website navigation for faster onboarding.
 
+### Phase 4.4 (Current increment)
+
+- Added dedicated media kit page for screenshots and demo video flow.
+- Added reusable demo checklist for CLI and VS Code extension walkthroughs.
+- Linked media kit across website pages to support release storytelling.
+
 ---
 
 ## Phase 5: Multi-provider expansion
