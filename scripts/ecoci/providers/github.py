@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import difflib
 import os
 import re
 import subprocess
@@ -197,10 +198,41 @@ class GitHubProvider(CIProvider):
         jobs = data.get("jobs", {}) if isinstance(data, dict) else {}
         issues: List[str] = []
         recommendations: List[str] = []
+        findings: List[Dict[str, Any]] = []
+
+        def add_finding(fid: str, severity: str, message: str, fix: str, confidence: float) -> None:
+            findings.append(
+                {
+                    "id": fid,
+                    "severity": severity,
+                    "message": message,
+                    "fix": fix,
+                    "confidence": confidence,
+                    "auto_apply": confidence >= 0.9,
+                }
+            )
 
         if "concurrency" not in data:
             issues.append("Missing workflow-level concurrency control")
             recommendations.append("Add concurrency group to auto-cancel superseded runs")
+            add_finding(
+                "missing_concurrency",
+                "medium",
+                "Workflow missing concurrency control; superseded runs may waste CI minutes",
+                "Add workflow-level concurrency with cancel-in-progress",
+                0.98,
+            )
+
+        if "permissions" not in data:
+            issues.append("Missing explicit workflow permissions")
+            recommendations.append("Set least-privilege workflow permissions at top level")
+            add_finding(
+                "missing_permissions",
+                "medium",
+                "Workflow does not define explicit permissions; defaults may be broader than needed",
+                "Add top-level permissions: contents: read (expand only when needed)",
+                0.93,
+            )
 
         top_on = data.get("on", {})
         has_path_filters = False
@@ -211,6 +243,13 @@ class GitHubProvider(CIProvider):
                     has_path_filters = True
         if not has_path_filters:
             recommendations.append("Add paths/paths-ignore filters to skip workflow on docs-only changes")
+            add_finding(
+                "missing_paths_filters",
+                "low",
+                "Workflow runs on all changes including docs-only updates",
+                "Add paths-ignore for docs and markdown-only changes",
+                0.9,
+            )
 
         total_duration_seconds = 0.0
         if run_jobs:
@@ -248,15 +287,50 @@ class GitHubProvider(CIProvider):
                         has_cache = True
                 if uses.endswith("@main") or uses.endswith("@master"):
                     issues.append(f"Job '{job_name}' uses floating action ref '{uses}'")
+                    add_finding(
+                        "floating_action_ref",
+                        "high",
+                        f"Job '{job_name}' uses floating action reference '{uses}'",
+                        "Pin actions to immutable commit SHA or stable major version",
+                        0.85,
+                    )
+
+                run_cmd = str(step.get("run", ""))
+                if re.search(r"curl\s+[^\n]*\|\s*(bash|sh|zsh)", run_cmd, re.IGNORECASE):
+                    issues.append(f"Job '{job_name}' has curl|shell execution pattern")
+                    add_finding(
+                        "curl_pipe_shell",
+                        "critical",
+                        f"Job '{job_name}' executes remote script via curl|shell",
+                        "Download script, verify checksum/signature, then execute",
+                        0.7,
+                    )
+                if re.search(r"wget\s+[^\n]*\|\s*(bash|sh|zsh)", run_cmd, re.IGNORECASE):
+                    issues.append(f"Job '{job_name}' has wget|shell execution pattern")
+                    add_finding(
+                        "wget_pipe_shell",
+                        "critical",
+                        f"Job '{job_name}' executes remote script via wget|shell",
+                        "Download script, verify checksum/signature, then execute",
+                        0.7,
+                    )
 
             if not has_cache:
                 recommendations.append(f"Job '{job_name}' has no dependency caching")
+                add_finding(
+                    "missing_cache",
+                    "medium",
+                    f"Job '{job_name}' has no dependency caching",
+                    "Enable setup-* cache and/or actions/cache",
+                    0.95,
+                )
 
         return {
             "issues": sorted(set(issues)),
             "recommendations": sorted(set(recommendations)),
             "job_count": len(jobs),
             "observed_total_duration_seconds": round(total_duration_seconds, 1),
+            "findings": findings,
         }
 
     def optimize_workflow(self, workflow_yaml: str) -> Tuple[str, List[str]]:
@@ -307,6 +381,51 @@ class GitHubProvider(CIProvider):
 
         optimized = yaml.safe_dump(data, sort_keys=False)
         return optimized, changes
+
+    def optimize_workflow_with_metadata(self, workflow_yaml: str) -> Dict[str, Any]:
+        """Return optimized workflow with confidence-scored fixes and diff preview."""
+        optimized, changes = self.optimize_workflow(workflow_yaml)
+
+        fixes: List[Dict[str, Any]] = []
+        for c in changes:
+            confidence = 0.9
+            risk = "low"
+            if "concurrency" in c.lower():
+                confidence = 0.98
+            elif "timeout-minutes" in c.lower():
+                confidence = 0.97
+            elif "cache" in c.lower():
+                confidence = 0.93
+            elif "workflow" in c.lower():
+                confidence = 0.9
+
+            fixes.append(
+                {
+                    "title": c,
+                    "confidence": round(confidence, 2),
+                    "risk": risk,
+                    "auto_apply": confidence >= 0.9,
+                    "rollback": "Revert .github/workflows file to previous revision",
+                }
+            )
+
+        diff_text = self.build_unified_diff(workflow_yaml, optimized)
+        return {
+            "optimized_workflow": optimized,
+            "changes": changes,
+            "fixes": fixes,
+            "diff": diff_text,
+        }
+
+    @staticmethod
+    def build_unified_diff(before_text: str, after_text: str, before_name: str = "before.yml", after_name: str = "after.yml") -> str:
+        diff = difflib.unified_diff(
+            before_text.splitlines(keepends=True),
+            after_text.splitlines(keepends=True),
+            fromfile=before_name,
+            tofile=after_name,
+        )
+        return "".join(diff)
 
     def _get_ref_sha(self, repo: str, branch: str) -> str:
         payload = self._request("GET", f"/repos/{repo}/git/ref/heads/{branch}")

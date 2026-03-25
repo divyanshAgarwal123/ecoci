@@ -233,6 +233,9 @@ ecoci analyze --provider github --run-id <actions_run_id> --markdown ecoci-repor
 # Generate optimized workflow YAML patch/preview
 ecoci optimize --provider github --json
 
+# Generate optimization plus unified diff preview
+ecoci optimize --provider github --show-diff
+
 # Write optimized workflow to a file
 ecoci optimize --provider github --workflow .github/workflows/test.yml --out optimized-workflow.yml
 
@@ -242,9 +245,19 @@ ecoci pr create --provider github --title "EcoCI: Optimize workflow"
 # Create PR + post carbon/cost dashboard from a real run
 ecoci pr create --provider github --run-id <actions_run_id>
 
+# Preview PR body and confidence-scored fix plan without creating PR
+ecoci pr create --provider github --dry-run --json
+
 # Validate setup/auth/workflow discovery
 ecoci doctor --provider github
 ```
+
+Phase 2.0 enhancements now included in CLI output:
+
+- Confidence-scored findings in `analyze`
+- Confidence-scored fix metadata in `optimize`
+- Unified diff preview via `ecoci optimize --show-diff`
+- Structured PR body with expected impact + rollback plan in `pr create`
 
 ### C) Webhook/server mode
 

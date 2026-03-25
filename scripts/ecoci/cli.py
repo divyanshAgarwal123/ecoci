@@ -83,6 +83,7 @@ GitLab:  https://gitlab.com/gitlab-ai-hackathon/participants/34560917
     optimize_parser.add_argument("--ref", default="main", help="Git ref (branch/tag)")
     optimize_parser.add_argument("--workflow", help="Workflow path to optimize")
     optimize_parser.add_argument("--out", help="Output file path for optimized YAML")
+    optimize_parser.add_argument("--show-diff", action="store_true", help="Show unified diff preview")
     optimize_parser.add_argument("--json", action="store_true", help="Output JSON")
 
     # ─── pr (GitHub-first universal flow) ───
@@ -321,12 +322,19 @@ def cmd_analyze(args):
 
     issues = analysis.get("issues", [])
     recs = analysis.get("recommendations", [])
+    findings = analysis.get("findings", [])
     print(f"\n  Issues: {len(issues)}")
     for i in issues:
         print(f"    - {i}")
     print(f"\n  Recommendations: {len(recs)}")
     for r in recs:
         print(f"    - {r}")
+
+    if findings:
+        print(f"\n  Findings (confidence-scored): {len(findings)}")
+        for f in findings:
+            conf_pct = round(float(f.get("confidence", 0.0)) * 100)
+            print(f"    - [{f.get('severity', 'info')}] {f.get('message')} (confidence: {conf_pct}%)")
 
     if metrics:
         print("\n📊 Real run metrics")
@@ -347,6 +355,14 @@ def cmd_analyze(args):
         ]
         for i in issues:
             lines.append(f"- {i}")
+        if findings:
+            lines.extend(["", "## Findings (Confidence-Scored)"])
+            for f in findings:
+                conf_pct = round(float(f.get("confidence", 0.0)) * 100)
+                lines.append(
+                    f"- [{f.get('severity', 'info')}] {f.get('message')} "
+                    f"→ {f.get('fix', 'N/A')} (confidence: {conf_pct}%)"
+                )
         lines.extend(["", "## Recommendations"])
         for r in recs:
             lines.append(f"- {r}")
@@ -371,7 +387,17 @@ def cmd_optimize(args):
     workflow_path = _pick_workflow(provider, repo, args.ref, args.workflow)
     workflow_yaml = provider.get_workflow_content(repo, workflow_path, args.ref)
 
-    optimized, changes = provider.optimize_workflow(workflow_yaml)
+    if hasattr(provider, "optimize_workflow_with_metadata"):
+        optimization = provider.optimize_workflow_with_metadata(workflow_yaml)
+        optimized = optimization.get("optimized_workflow", workflow_yaml)
+        changes = optimization.get("changes", [])
+        fixes = optimization.get("fixes", [])
+        diff_text = optimization.get("diff", "")
+    else:
+        optimized, changes = provider.optimize_workflow(workflow_yaml)
+        fixes = []
+        diff_text = ""
+
     payload = {
         "provider": "github",
         "repo": repo,
@@ -379,6 +405,10 @@ def cmd_optimize(args):
         "workflow": workflow_path,
         "changes": changes,
     }
+    if fixes:
+        payload["fixes"] = fixes
+    if args.show_diff and diff_text:
+        payload["diff"] = diff_text
 
     if args.out:
         Path(args.out).write_text(optimized)
@@ -396,11 +426,21 @@ def cmd_optimize(args):
     for c in changes:
         print(f"    - {c}")
 
+    if fixes:
+        print("\n  Fix confidence")
+        for f in fixes:
+            conf_pct = round(float(f.get("confidence", 0.0)) * 100)
+            print(f"    - {f.get('title')} [{conf_pct}% | risk: {f.get('risk', 'unknown')}]")
+
     if args.out:
         print(f"\n✅ Wrote optimized workflow to {args.out}")
     else:
         print("\n--- Optimized workflow preview ---\n")
         print(optimized)
+
+    if args.show_diff and diff_text:
+        print("\n--- Unified diff preview ---\n")
+        print(diff_text)
 
 
 def cmd_pr(args):
@@ -422,18 +462,59 @@ def cmd_pr(args):
     base_branch = args.base or provider.get_default_branch(repo)
     workflow_path = _pick_workflow(provider, repo, base_branch, args.workflow)
     workflow_yaml = provider.get_workflow_content(repo, workflow_path, base_branch)
-    optimized, changes = provider.optimize_workflow(workflow_yaml)
+    if hasattr(provider, "optimize_workflow_with_metadata"):
+        optimization = provider.optimize_workflow_with_metadata(workflow_yaml)
+        optimized = optimization.get("optimized_workflow", workflow_yaml)
+        changes = optimization.get("changes", [])
+        fixes = optimization.get("fixes", [])
+        diff_text = optimization.get("diff", "")
+    else:
+        optimized, changes = provider.optimize_workflow(workflow_yaml)
+        fixes = []
+        diff_text = ""
 
     body_lines = [
         "## EcoCI Optimization Summary",
         "",
-        "Automated GitHub Actions workflow improvements:",
+        "### Automated workflow improvements",
         "",
     ]
-    for c in changes:
-        body_lines.append(f"- {c}")
-    if not changes:
-        body_lines.append("- No structural changes required")
+    if fixes:
+        for fx in fixes:
+            conf_pct = round(float(fx.get("confidence", 0.0)) * 100)
+            body_lines.append(
+                f"- {fx.get('title')} (confidence: {conf_pct}%, risk: {fx.get('risk', 'unknown')})"
+            )
+    else:
+        for c in changes:
+            body_lines.append(f"- {c}")
+        if not changes:
+            body_lines.append("- No structural changes required")
+
+    body_lines.extend([
+        "",
+        "### Expected impact",
+        "- Faster average workflow completion due to improved caching and execution controls",
+        "- Lower wasted CI minutes by canceling superseded runs",
+        "- Better governance via explicit workflow defaults",
+        "",
+        "### Rollback plan",
+        f"- Revert {workflow_path} to the previous commit if any regression is observed",
+        "- Re-run CI to verify baseline behavior is restored",
+    ])
+
+    if diff_text:
+        body_lines.extend([
+            "",
+            "### Diff preview",
+            "<details><summary>Show workflow diff</summary>",
+            "",
+            "```diff",
+            diff_text[:12000],
+            "```",
+            "",
+            "</details>",
+        ])
 
     body_lines.extend([
         "",

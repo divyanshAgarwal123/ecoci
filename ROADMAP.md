@@ -51,12 +51,19 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
 
 ---
 
-## Phase 2: Optimization quality and safety
+## Phase 2 (In Progress): Optimization quality and safety
 
 - Add confidence scoring to workflow changes.
 - Add richer action pinning / security hardening checks.
 - Add before/after KPI section in markdown + PR body.
 - Add deterministic patch output mode for CI bots.
+
+### Phase 2.0 (Current increment)
+
+- Confidence-scored findings in `ecoci analyze` output and markdown report.
+- Confidence-scored fix metadata and risk labels in `ecoci optimize` output.
+- Unified diff preview support via `ecoci optimize --show-diff`.
+- Structured PR body with impact section + rollback plan for safer PR review.
 
 ---
 

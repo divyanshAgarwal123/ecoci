@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- Confidence-scored findings in `ecoci analyze` output (including markdown reports).
+- Confidence-scored fix metadata for `ecoci optimize` results.
+- Unified diff preview support via `ecoci optimize --show-diff`.
+- Structured `ecoci pr create` body sections: improvements, expected impact, rollback plan.
+- Additional GitHub workflow security checks (permissions and risky `curl|shell` / `wget|shell` patterns).
+
+## [0.1.3] - 2026-03-26
+
+### Added
 - GitHub tag-triggered release workflow in [.github/workflows/release.yml](.github/workflows/release.yml).
 - Unified artifact build script in [scripts/build_release_artifacts.sh](scripts/build_release_artifacts.sh).
 - Extension packaging metadata files:
