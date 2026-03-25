@@ -312,8 +312,14 @@ Dashboard UX (Phase 2.2):
 ### E) Product roadmap + website scaffold
 
 - Product roadmap: [ROADMAP.md](ROADMAP.md)
-- Website scaffold: [website/index.html](website/index.html)
+- Website landing page: [website/index.html](website/index.html)
 - Downloads/install matrix: [website/downloads.html](website/downloads.html)
+
+Website now includes:
+
+- Product landing flow with install + release CTAs
+- CLI and extension verification paths
+- Artifact-level release guidance (wheel/sdist/VSIX)
 
 ### F) Release readiness assets
 

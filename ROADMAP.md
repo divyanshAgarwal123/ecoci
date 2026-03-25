@@ -113,6 +113,12 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
   - Quick start for GitHub repos
 - Add release artifacts and versioned changelog.
 
+### Phase 4.1 (Current increment)
+
+- Upgraded website homepage to product-style landing page with clearer navigation and CTAs.
+- Expanded downloads page with direct artifact guidance (wheel/sdist/VSIX).
+- Added quick verification paths for both CLI and VS Code dashboard workflows.
+
 ---
 
 ## Phase 5: Multi-provider expansion

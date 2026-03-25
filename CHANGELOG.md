@@ -18,6 +18,9 @@ All notable changes to this project are documented in this file.
 - Deterministic patch output mode for CI bots via `ecoci optimize --deterministic-patch`.
 - Patch file export support via `ecoci optimize --patch-file <path>`.
 - Before/after KPI projection in markdown analysis output and PR body generation.
+- Refreshed website landing page with clearer product messaging and install/onboarding CTAs.
+- Expanded downloads page with artifact-level install guidance for wheel/sdist/VSIX.
+- Added explicit CLI + VS Code dashboard verification flows in website docs.
 
 ### Changed
 - Run metric estimation now uses runner metadata heuristics (estimated core count + OS multiplier) for improved energy realism.

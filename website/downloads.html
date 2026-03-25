@@ -5,13 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EcoCI Downloads</title>
   <style>
-    body { font-family: Inter, system-ui, sans-serif; margin: 0; background: #0b1020; color: #eaf0ff; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 48px 20px; }
-    h1 { font-size: 2rem; margin-bottom: 8px; }
-    .muted { color: #a7b4d4; }
-    .card { background: #151c34; border: 1px solid #27325b; border-radius: 12px; padding: 18px; margin-top: 16px; }
-    code { background: #0c1330; padding: 2px 6px; border-radius: 6px; }
-    a { color: #91b6ff; }
+    :root {
+      --bg: #090e1a;
+      --panel: #121a31;
+      --border: #293861;
+      --text: #eaf0ff;
+      --muted: #b0bddf;
+      --brand: #7ec6ff;
+      --brand-2: #88f7d2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+      margin: 0;
+      background: radial-gradient(800px 450px at 85% -15%, rgba(126, 198, 255, 0.12), transparent), var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .wrap { max-width: 1060px; margin: 0 auto; padding: 30px 20px 42px; }
+    h1 { font-size: 2.05rem; margin: 0 0 6px; }
+    .muted { color: var(--muted); }
+    .top { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .btn, .btn-ghost {
+      text-decoration: none; border-radius: 10px; padding: 8px 12px; font-weight: 600; display: inline-block;
+    }
+    .btn { background: linear-gradient(90deg, var(--brand), var(--brand-2)); color: #081027; }
+    .btn-ghost { border: 1px solid var(--border); color: var(--text); }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 13px; padding: 16px; margin-top: 14px; }
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    code { background: #0a132c; border: 1px solid #1b2b58; padding: 2px 6px; border-radius: 6px; }
+    pre { margin: 8px 0 0; background: #0a132c; border: 1px solid #1b2b58; border-radius: 10px; padding: 10px; overflow-x: auto; }
+    a { color: #9bc4ff; }
     table { width: 100%; border-collapse: collapse; margin-top: 8px; }
     th, td { border-bottom: 1px solid #27325b; padding: 10px 8px; text-align: left; vertical-align: top; }
     th { color: #b8c8f2; }
@@ -19,8 +44,16 @@
 </head>
 <body>
   <main class="wrap">
-    <h1>EcoCI Downloads & Install</h1>
-    <p class="muted">Phase 1.1 install matrix for CLI and VS Code extension adoption.</p>
+    <section class="top">
+      <div>
+        <h1>EcoCI Downloads & Install</h1>
+        <p class="muted">Install matrix for CLI and VS Code extension with quick verification flows.</p>
+      </div>
+      <div>
+        <a class="btn-ghost" href="./index.html">Home</a>
+        <a class="btn" href="https://github.com/divyanshAgarwal123/ecoci/releases">Release Assets</a>
+      </div>
+    </section>
 
     <section class="card">
       <h2>Install matrix</h2>
@@ -50,31 +83,49 @@
           </tr>
           <tr>
             <td>VS Code extension (MVP)</td>
-            <td>Load folder <code>vscode-extensions/ecoci-vscode</code> in VS Code Extension Development Host</td>
-            <td>Marketplace packaging planned for later phase.</td>
+            <td>Install generated VSIX from Releases (or load local folder <code>vscode-extensions/ecoci-vscode</code>)</td>
+            <td>Includes Activity Bar dashboard for Analyze/Optimize/PR dry-run.</td>
           </tr>
         </tbody>
       </table>
     </section>
 
-    <section class="card">
-      <h2>Quick verification</h2>
-      <ul>
-        <li><code>ecoci version</code></li>
-        <li><code>ecoci doctor --provider github</code></li>
-        <li><code>ecoci analyze --provider github --json</code></li>
-        <li><code>ecoci pr create --provider github --dry-run</code></li>
-      </ul>
-      <p>For GitHub PR creation, set <code>GITHUB_TOKEN</code>.</p>
+    <section class="grid">
+      <article class="card">
+        <h2>Quick verification</h2>
+        <pre>ecoci version
+ecoci doctor --provider github
+ecoci analyze --provider github --json
+ecoci optimize --provider github --deterministic-patch --patch-file ecoci.patch
+ecoci pr create --provider github --dry-run</pre>
+        <p>For write operations, set <code>GITHUB_TOKEN</code>.</p>
+      </article>
+
+      <article class="card">
+        <h2>Extension verification</h2>
+        <ul>
+          <li>Open Activity Bar → <strong>EcoCI</strong></li>
+          <li>Run <strong>Analyze</strong> to fetch findings and quality gate</li>
+          <li>Run <strong>Optimize</strong> to inspect change plan</li>
+          <li>Run <strong>PR Dry Run</strong> to preview PR payload safely</li>
+        </ul>
+      </article>
     </section>
 
     <section class="card">
+      <h2>Release artifacts</h2>
+      <p class="muted">Each tagged release publishes artifacts for direct download.</p>
+      <ul>
+        <li>Python wheel: <code>ecoci-*.whl</code></li>
+        <li>Source package: <code>ecoci-*.tar.gz</code></li>
+        <li>VS Code extension: <code>ecoci-vscode.vsix</code></li>
+      </ul>
+
       <h2>Source and releases</h2>
       <p>
         <a href="https://github.com/divyanshAgarwal123/ecoci">Repository</a><br/>
         <a href="https://github.com/divyanshAgarwal123/ecoci/releases">Releases</a>
       </p>
-      <p><a href="./index.html">← Back to homepage</a></p>
     </section>
   </main>
 </body>

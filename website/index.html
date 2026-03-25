@@ -3,59 +3,174 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EcoCI — CI Optimization CLI + VS Code Extension</title>
+  <title>EcoCI — Universal CI Optimization Toolkit</title>
   <style>
-    body { font-family: Inter, system-ui, sans-serif; margin: 0; background: #0b1020; color: #eaf0ff; }
-    .wrap { max-width: 920px; margin: 0 auto; padding: 48px 20px; }
-    h1 { font-size: 2.2rem; margin-bottom: 8px; }
-    .muted { color: #a7b4d4; }
-    .card { background: #151c34; border: 1px solid #27325b; border-radius: 12px; padding: 18px; margin-top: 16px; }
-    code { background: #0c1330; padding: 2px 6px; border-radius: 6px; }
-    a { color: #91b6ff; }
-    ul { line-height: 1.7; }
+    :root {
+      --bg: #090e1a;
+      --panel: #121a31;
+      --panel-2: #172343;
+      --border: #293861;
+      --text: #eaf0ff;
+      --muted: #b0bddf;
+      --brand: #7ec6ff;
+      --brand-2: #88f7d2;
+      --shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+      margin: 0;
+      background:
+        radial-gradient(900px 500px at 85% -10%, rgba(126, 198, 255, 0.12), transparent),
+        radial-gradient(700px 450px at 10% -15%, rgba(136, 247, 210, 0.12), transparent),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .wrap { max-width: 1060px; margin: 0 auto; padding: 28px 20px 44px; }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 26px;
+    }
+    .brand { font-weight: 800; letter-spacing: 0.2px; }
+    .brand span { color: var(--brand); }
+    .nav-links { display: flex; gap: 14px; align-items: center; }
+    .btn, .btn-ghost {
+      text-decoration: none;
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .btn { background: linear-gradient(90deg, var(--brand), var(--brand-2)); color: #0a1226; }
+    .btn-ghost { border: 1px solid var(--border); color: var(--text); }
+
+    .hero {
+      background: linear-gradient(180deg, rgba(23, 35, 67, 0.72), rgba(18, 26, 49, 0.84));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+    }
+    h1 { font-size: 2.25rem; margin: 0 0 8px; line-height: 1.2; }
+    .muted { color: var(--muted); }
+    .hero p { max-width: 760px; margin: 0; }
+    .hero-actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .grid { display: grid; gap: 14px; margin-top: 16px; }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .card h3, .card h2 { margin-top: 0; margin-bottom: 8px; }
+    .chip {
+      display: inline-block;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    code {
+      background: #0a132c;
+      border: 1px solid #1b2b58;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    pre {
+      margin: 10px 0 0;
+      background: #0a132c;
+      border: 1px solid #1b2b58;
+      border-radius: 10px;
+      padding: 12px;
+      overflow-x: auto;
+      color: #dbe8ff;
+    }
+    a { color: #9bc4ff; }
+    ul { padding-left: 18px; }
+    footer { margin-top: 18px; color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 900px) {
+      .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      h1 { font-size: 1.9rem; }
+      .nav { gap: 10px; flex-wrap: wrap; }
+    }
   </style>
 </head>
 <body>
   <main class="wrap">
-    <h1>EcoCI</h1>
-    <p class="muted">Provider-pluggable CI optimization toolkit for GitHub-first workflows.</p>
+    <header class="nav">
+      <div class="brand">Eco<span>CI</span></div>
+      <div class="nav-links">
+        <a class="btn-ghost" href="./downloads.html">Downloads</a>
+        <a class="btn-ghost" href="https://github.com/divyanshAgarwal123/ecoci">Repository</a>
+        <a class="btn" href="https://github.com/divyanshAgarwal123/ecoci/releases">Latest Release</a>
+      </div>
+    </header>
 
-    <section class="card">
-      <h2>Install CLI</h2>
-      <p>Use Python package install:</p>
-      <p><code>pip install ecoci</code> or <code>pipx install ecoci</code></p>
-      <p>Required for GitHub PR actions: <code>GITHUB_TOKEN</code></p>
-      <p><a href="./downloads.html">See full install matrix →</a></p>
+    <section class="hero">
+      <div class="chip">Universal CLI + VS Code Extension</div>
+      <h1>Optimize CI workflows for speed, cost, and carbon</h1>
+      <p class="muted">EcoCI analyzes GitHub Actions workflows, identifies risky and expensive patterns, proposes safe fixes with confidence scoring, and helps automate PR-based optimization.</p>
+      <div class="hero-actions">
+        <a class="btn" href="./downloads.html">Install EcoCI</a>
+        <a class="btn-ghost" href="https://github.com/divyanshAgarwal123/ecoci">View Source</a>
+      </div>
+    </section>
+
+    <section class="grid grid-3">
+      <article class="card">
+        <h3>Fast diagnosis</h3>
+        <p class="muted">Run <code>doctor</code> and <code>analyze</code> to get security findings, quality gates, and prioritized recommendations.</p>
+      </article>
+      <article class="card">
+        <h3>Safe optimization</h3>
+        <p class="muted">Generate deterministic patches with unified diff previews and confidence-scored fixes before applying.</p>
+      </article>
+      <article class="card">
+        <h3>PR automation</h3>
+        <p class="muted">Create optimization PRs with rollback guidance and KPI projection blocks for reviewer confidence.</p>
+      </article>
+    </section>
+
+    <section class="grid grid-2">
+      <article class="card">
+        <h2>Quick start</h2>
+        <pre>ecoci doctor --provider github
+ecoci analyze --provider github --json
+ecoci optimize --provider github --deterministic-patch --patch-file ecoci.patch
+ecoci pr create --provider github --dry-run</pre>
+      </article>
+
+      <article class="card">
+        <h2>VS Code dashboard</h2>
+        <p class="muted">Use the EcoCI Activity Bar dashboard to run Analyze, Optimize, and PR Dry Run with in-panel results.</p>
+        <ul>
+          <li>Findings + severity view</li>
+          <li>Quality gate pass/warn/fail</li>
+          <li>Priority fixes with confidence</li>
+          <li>Projected KPI impact summary</li>
+        </ul>
+      </article>
     </section>
 
     <section class="card">
-      <h2>Quick start</h2>
-      <ul>
-        <li><code>ecoci doctor --provider github</code></li>
-        <li><code>ecoci analyze --provider github --json</code></li>
-        <li><code>ecoci optimize --provider github --json</code></li>
-        <li><code>ecoci pr create --provider github --dry-run</code></li>
-      </ul>
+      <h2>Release artifacts</h2>
+      <p class="muted">Tagged releases publish Python wheel/sdist and VSIX extension artifact automatically.</p>
+      <p><a href="https://github.com/divyanshAgarwal123/ecoci/releases">Browse releases and assets</a></p>
     </section>
 
-    <section class="card">
-      <h2>VS Code extension</h2>
-      <p>MVP extension scaffold is in this repository:</p>
-      <p><code>vscode-extensions/ecoci-vscode</code></p>
-      <p>Commands included:</p>
-      <ul>
-        <li>EcoCI: Analyze Current Repo</li>
-        <li>EcoCI: Optimize CI Workflows</li>
-        <li>EcoCI: Create Optimization PR</li>
-        <li>EcoCI: Show Carbon &amp; Cost Summary</li>
-      </ul>
-    </section>
-
-    <section class="card">
-      <h2>Source</h2>
-      <p><a href="https://github.com/divyanshAgarwal123/ecoci">GitHub Repository</a></p>
-      <p><a href="https://github.com/divyanshAgarwal123/ecoci/releases">GitHub Releases</a></p>
-    </section>
+    <footer>
+      EcoCI · GitHub-first today, provider-pluggable for multi-CI expansion.
+    </footer>
   </main>
 </body>
 </html>
