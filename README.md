@@ -319,6 +319,8 @@ Dashboard UX (Phase 2.2):
 - Activity Bar **EcoCI** view with interactive actions
 - In-editor summary of findings, prioritized fixes, and quality gate
 - PR dry-run preview surfaced directly in dashboard panel
+- Provider selector for GitHub/GitLab execution paths
+- Inline diff preview in Optimize dashboard flow
 
 ### E) Product roadmap + website scaffold
 

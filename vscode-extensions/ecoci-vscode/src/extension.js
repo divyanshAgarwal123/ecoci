@@ -13,6 +13,10 @@ function runEcoci(command, cwd) {
   });
 }
 
+function shellEscapeArg(value) {
+  return `"${String(value).replace(/(["\\$`])/g, '\\$1')}"`;
+}
+
 async function pickWorkspaceRoot() {
   const folders = vscode.workspace.workspaceFolders;
   if (!folders || folders.length === 0) {
@@ -58,9 +62,17 @@ class EcoCIDashboardViewProvider {
       const cwd = await pickWorkspaceRoot();
       if (!cwd) return;
 
+      const provider = msg.provider === 'gitlab' ? 'gitlab' : 'github';
+      const repo = (msg.repo || '').trim();
+      const providerArgs = [`--provider ${provider}`];
+      if (repo) {
+        providerArgs.push(`--repo ${shellEscapeArg(repo)}`);
+      }
+      const providerArgStr = providerArgs.join(' ');
+
       try {
         if (msg.command === 'analyze') {
-          const out = await runEcoci('ecoci analyze --provider github --json', cwd);
+          const out = await runEcoci(`ecoci analyze ${providerArgStr} --json`, cwd);
           const parsed = JSON.parse(out);
           const analysis = parsed.analysis || {};
           const findings = analysis.findings || [];
@@ -71,6 +83,7 @@ class EcoCIDashboardViewProvider {
           webview.postMessage({
             type: 'analysis',
             data: {
+              provider,
               repo: parsed.repo || 'N/A',
               workflow: parsed.workflow || 'N/A',
               findingsCount: findings.length,
@@ -84,26 +97,30 @@ class EcoCIDashboardViewProvider {
         }
 
         if (msg.command === 'optimize') {
-          const out = await runEcoci('ecoci optimize --provider github --json', cwd);
+          const out = await runEcoci(`ecoci optimize ${providerArgStr} --show-diff --json`, cwd);
           const parsed = JSON.parse(out);
           webview.postMessage({
             type: 'optimize',
             data: {
+              provider,
+              repo: parsed.repo || 'N/A',
               workflow: parsed.workflow || 'N/A',
               changeCount: (parsed.changes || []).length,
               changes: (parsed.changes || []).slice(0, 8),
               fixes: (parsed.fixes || []).slice(0, 8),
+              diff: parsed.diff || '',
             },
           });
           return;
         }
 
         if (msg.command === 'pr') {
-          const out = await runEcoci('ecoci pr create --provider github --dry-run --json', cwd);
+          const out = await runEcoci(`ecoci pr create ${providerArgStr} --dry-run --json`, cwd);
           const parsed = JSON.parse(out);
           webview.postMessage({
             type: 'pr',
             data: {
+              provider,
               repo: parsed.repo || 'N/A',
               workflow: parsed.workflow || 'N/A',
               title: parsed.title || 'N/A',
@@ -132,16 +149,41 @@ class EcoCIDashboardViewProvider {
   <style>
     body { font-family: var(--vscode-font-family); padding: 12px; color: var(--vscode-foreground); }
     .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    select, input {
+      background: var(--vscode-input-background);
+      color: var(--vscode-input-foreground);
+      border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+      border-radius: 4px;
+      padding: 5px 8px;
+      min-height: 30px;
+    }
+    input { min-width: 210px; }
     button { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: 0; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
     button:hover { background: var(--vscode-button-hoverBackground); }
     .card { border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 10px; margin-bottom: 10px; }
     .muted { opacity: 0.8; font-size: 12px; }
     ul { margin: 6px 0 0 16px; padding: 0; }
     code { font-family: var(--vscode-editor-font-family); }
+    pre {
+      background: var(--vscode-editor-background);
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 6px;
+      padding: 8px;
+      overflow-x: auto;
+      white-space: pre;
+      max-height: 240px;
+    }
   </style>
 </head>
 <body>
   <h3>EcoCI Dashboard</h3>
+  <div class="row">
+    <select id="provider">
+      <option value="github">github</option>
+      <option value="gitlab">gitlab</option>
+    </select>
+    <input id="repo" placeholder="owner/repo or gitlab project id/path (optional)" />
+  </div>
   <div class="row">
     <button id="analyze">Analyze</button>
     <button id="optimize">Optimize</button>
@@ -155,15 +197,30 @@ class EcoCIDashboardViewProvider {
   <script>
     const vscode = acquireVsCodeApi();
     const content = document.getElementById('content');
+    const providerEl = document.getElementById('provider');
+    const repoEl = document.getElementById('repo');
+
+    const esc = (v) => String(v)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;');
+
+    const post = (command) => {
+      vscode.postMessage({
+        command,
+        provider: providerEl.value,
+        repo: repoEl.value,
+      });
+    };
 
     document.getElementById('analyze').addEventListener('click', () => {
-      vscode.postMessage({ command: 'analyze' });
+      post('analyze');
     });
     document.getElementById('optimize').addEventListener('click', () => {
-      vscode.postMessage({ command: 'optimize' });
+      post('optimize');
     });
     document.getElementById('pr').addEventListener('click', () => {
-      vscode.postMessage({ command: 'pr' });
+      post('pr');
     });
 
     window.addEventListener('message', event => {
@@ -174,35 +231,41 @@ class EcoCIDashboardViewProvider {
       }
       if (msg.type === 'analysis') {
         const d = msg.data;
-        const findings = (d.topFindings || []).map(f => '<li>[' + (f.severity || 'info') + '] ' + (f.message || '') + '</li>').join('');
-        const fixes = (d.topFixes || []).map(f => '<li>[' + (f.severity || 'low') + '] ' + (f.fix || '') + '</li>').join('');
+        const findings = (d.topFindings || []).map(f => '<li>[' + esc(f.severity || 'info') + '] ' + esc(f.message || '') + '</li>').join('');
+        const fixes = (d.topFixes || []).map(f => '<li>[' + esc(f.severity || 'low') + '] ' + esc(f.fix || '') + '</li>').join('');
         content.innerHTML =
-          '<div><strong>Repo:</strong> ' + d.repo + '</div>' +
-          '<div><strong>Workflow:</strong> ' + d.workflow + '</div>' +
-          '<div><strong>Findings:</strong> ' + d.findingsCount + '</div>' +
-          '<div><strong>Quality Gate:</strong> ' + (d.qualityGate.status || 'unknown').toUpperCase() + '</div>' +
-          '<div class="muted">Duration: ' + d.metrics.duration + 's • Cost: $' + d.metrics.cost + ' • Energy: ' + d.metrics.energy + ' kWh • CO2: ' + d.metrics.co2 + ' kg</div>' +
+          '<div><strong>Provider:</strong> ' + esc(d.provider) + '</div>' +
+          '<div><strong>Repo:</strong> ' + esc(d.repo) + '</div>' +
+          '<div><strong>Workflow:</strong> ' + esc(d.workflow) + '</div>' +
+          '<div><strong>Findings:</strong> ' + esc(d.findingsCount) + '</div>' +
+          '<div><strong>Quality Gate:</strong> ' + esc((d.qualityGate.status || 'unknown').toUpperCase()) + '</div>' +
+          '<div class="muted">Duration: ' + esc(d.metrics.duration) + 's • Cost: $' + esc(d.metrics.cost) + ' • Energy: ' + esc(d.metrics.energy) + ' kWh • CO2: ' + esc(d.metrics.co2) + ' kg</div>' +
           '<div class="card"><strong>Top Findings</strong><ul>' + (findings || '<li>None</li>') + '</ul></div>' +
           '<div class="card"><strong>Priority Fixes</strong><ul>' + (fixes || '<li>None</li>') + '</ul></div>';
         return;
       }
       if (msg.type === 'optimize') {
         const d = msg.data;
-        const changes = (d.changes || []).map(c => '<li>' + c + '</li>').join('');
+        const changes = (d.changes || []).map(c => '<li>' + esc(c) + '</li>').join('');
+        const diff = d.diff ? '<div class="card"><strong>Diff Preview</strong><pre>' + esc(d.diff) + '</pre></div>' : '';
         content.innerHTML =
-          '<div><strong>Workflow:</strong> ' + d.workflow + '</div>' +
-          '<div><strong>Changes:</strong> ' + d.changeCount + '</div>' +
-          '<div class="card"><strong>Planned Changes</strong><ul>' + (changes || '<li>No changes</li>') + '</ul></div>';
+          '<div><strong>Provider:</strong> ' + esc(d.provider) + '</div>' +
+          '<div><strong>Repo:</strong> ' + esc(d.repo) + '</div>' +
+          '<div><strong>Workflow:</strong> ' + esc(d.workflow) + '</div>' +
+          '<div><strong>Changes:</strong> ' + esc(d.changeCount) + '</div>' +
+          '<div class="card"><strong>Planned Changes</strong><ul>' + (changes || '<li>No changes</li>') + '</ul></div>' +
+          diff;
         return;
       }
       if (msg.type === 'pr') {
         const d = msg.data;
         content.innerHTML =
-          '<div><strong>Repo:</strong> ' + d.repo + '</div>' +
-          '<div><strong>Workflow:</strong> ' + d.workflow + '</div>' +
-          '<div><strong>Title:</strong> ' + d.title + '</div>' +
-          '<div><strong>Base → Branch:</strong> ' + d.base + ' → ' + d.branch + '</div>' +
-          '<div><strong>Planned Changes:</strong> ' + d.changeCount + '</div>' +
+          '<div><strong>Provider:</strong> ' + esc(d.provider) + '</div>' +
+          '<div><strong>Repo:</strong> ' + esc(d.repo) + '</div>' +
+          '<div><strong>Workflow:</strong> ' + esc(d.workflow) + '</div>' +
+          '<div><strong>Title:</strong> ' + esc(d.title) + '</div>' +
+          '<div><strong>Base → Branch:</strong> ' + esc(d.base) + ' → ' + esc(d.branch) + '</div>' +
+          '<div><strong>Planned Changes:</strong> ' + esc(d.changeCount) + '</div>' +
           '<div class="muted">Dry-run only. No commit or PR created.</div>';
       }
     });

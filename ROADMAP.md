@@ -102,6 +102,12 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
 - Side panel UI for issues and recommendations.
 - Inline diff preview before PR creation.
 
+### Phase 3.1 (Current increment)
+
+- Added dashboard provider selector (`github` / `gitlab`) with optional repo/project input.
+- Added inline diff preview rendering in dashboard Optimize action.
+- Added provider-aware Analyze/Optimize/PR dry-run execution from dashboard.
+
 ---
 
 ## Phase 4: Website + distribution

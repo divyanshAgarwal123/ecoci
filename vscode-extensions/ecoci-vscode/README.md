@@ -7,8 +7,10 @@ This extension provides a lightweight UI wrapper around the `ecoci` CLI.
 EcoCI now includes an Activity Bar view:
 
 - Open **EcoCI** icon in Activity Bar
+- Select provider (`github` or `gitlab`) and optional repo/project value
 - Use **Analyze**, **Optimize**, and **PR Dry Run** actions
 - View top findings, prioritized fixes, quality gate status, and key metrics
+- View inline optimization diff preview from the dashboard
 
 ## Commands
 

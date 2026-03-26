@@ -26,11 +26,14 @@ All notable changes to this project are documented in this file.
 - Added media kit page with screenshot placeholders and demo recording checklist.
 - Added GitLab provider support to CLI flows: `doctor`, `analyze`, `optimize`, and `pr create`.
 - Added provider-aware repo resolution and token guidance (`GITHUB_TOKEN` / `GITLAB_TOKEN`).
+- Added VS Code dashboard provider selector for `github` and `gitlab` execution paths.
+- Added inline workflow diff preview rendering in VS Code dashboard Optimize action.
 
 ### Changed
 - Run metric estimation now uses runner metadata heuristics (estimated core count + OS multiplier) for improved energy realism.
 - VS Code extension UX upgraded from markdown-only command output to panel-based workflow insights.
 - CLI provider selection now supports both GitHub and GitLab instead of GitHub-only choices.
+- VS Code dashboard now executes provider-aware CLI commands instead of GitHub-only defaults.
 
 ## [0.1.3] - 2026-03-26
 
