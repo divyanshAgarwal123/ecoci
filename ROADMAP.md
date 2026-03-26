@@ -144,3 +144,10 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
 - GitLab parity under provider interface
 - Jenkins and CircleCI read-only analyzers
 - Enterprise policy profiles and org-level dashboards
+
+### Phase 5.1 (Current increment)
+
+- Enabled CLI provider selector for both GitHub and GitLab on `doctor`, `analyze`, `optimize`, and `pr create`.
+- Added provider-aware repo handling (`owner/repo` for GitHub, `project_id_or_path` for GitLab).
+- Added GitLab default branch parity and MR URL handling in PR flow.
+- Added README examples for GitLab provider usage.

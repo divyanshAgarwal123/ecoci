@@ -221,7 +221,7 @@ ecoci fix
 ecoci report
 ```
 
-### C) GitHub-first universal CLI (MVP)
+### C) Universal CLI (GitHub + GitLab)
 
 ```bash
 # Analyze first workflow in repo (auto-detect owner/repo from git remote)
@@ -253,6 +253,12 @@ ecoci pr create --provider github --dry-run --json
 
 # Validate setup/auth/workflow discovery
 ecoci doctor --provider github
+
+# GitLab project support (project id or path required)
+ecoci doctor --provider gitlab --repo 34560917
+ecoci analyze --provider gitlab --repo 34560917 --json
+ecoci optimize --provider gitlab --repo 34560917 --show-diff
+ecoci pr create --provider gitlab --repo 34560917 --dry-run --json
 ```
 
 Phase 2.0 enhancements now included in CLI output:
@@ -274,6 +280,11 @@ Phase 2.3 enhancements now included:
 - Deterministic patch output mode for CI bots (`ecoci optimize --deterministic-patch`)
 - Unified patch file export via `--patch-file`
 - Before/after KPI projection blocks in markdown reports and PR body
+
+Provider notes:
+
+- GitHub write operations use `GITHUB_TOKEN`
+- GitLab write operations use `GITLAB_TOKEN`
 
 ### C) Webhook/server mode
 

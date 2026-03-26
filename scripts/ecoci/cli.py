@@ -61,25 +61,25 @@ GitLab:  https://gitlab.com/gitlab-ai-hackathon/participants/34560917
 
     # ─── analyze (GitHub-first universal flow) ───
     analyze_parser = subparsers.add_parser("analyze", help="Analyze CI workflow on a provider (default: GitHub)")
-    analyze_parser.add_argument("--provider", default="github", choices=["github"], help="CI provider")
-    analyze_parser.add_argument("--repo", help="Repository as owner/repo (auto-detected from git remote if omitted)")
+    analyze_parser.add_argument("--provider", default="github", choices=["github", "gitlab"], help="CI provider")
+    analyze_parser.add_argument("--repo", help="GitHub owner/repo (auto-detected) or GitLab project id/path")
     analyze_parser.add_argument("--ref", default="main", help="Git ref (branch/tag) for reading workflow files")
     analyze_parser.add_argument("--workflow", help="Workflow path (e.g., .github/workflows/test.yml). Defaults to first found.")
-    analyze_parser.add_argument("--run-id", type=int, help="GitHub Actions run ID for real job duration data")
+    analyze_parser.add_argument("--run-id", type=int, help="Run ID for provider metrics (GitHub currently supported)")
     analyze_parser.add_argument("--json", action="store_true", help="Output JSON")
     analyze_parser.add_argument("--markdown", help="Write markdown report to file")
 
     # ─── doctor (setup diagnostics) ───
     doctor_parser = subparsers.add_parser("doctor", help="Validate local setup and provider connectivity")
-    doctor_parser.add_argument("--provider", default="github", choices=["github"], help="CI provider")
-    doctor_parser.add_argument("--repo", help="Repository as owner/repo (auto-detected if omitted)")
+    doctor_parser.add_argument("--provider", default="github", choices=["github", "gitlab"], help="CI provider")
+    doctor_parser.add_argument("--repo", help="GitHub owner/repo (auto-detected) or GitLab project id/path")
     doctor_parser.add_argument("--ref", default="main", help="Ref used to check workflow discovery")
     doctor_parser.add_argument("--json", action="store_true", help="Output JSON")
 
     # ─── optimize (GitHub-first universal flow) ───
     optimize_parser = subparsers.add_parser("optimize", help="Generate optimized workflow YAML")
-    optimize_parser.add_argument("--provider", default="github", choices=["github"], help="CI provider")
-    optimize_parser.add_argument("--repo", help="Repository as owner/repo (auto-detected if omitted)")
+    optimize_parser.add_argument("--provider", default="github", choices=["github", "gitlab"], help="CI provider")
+    optimize_parser.add_argument("--repo", help="GitHub owner/repo (auto-detected) or GitLab project id/path")
     optimize_parser.add_argument("--ref", default="main", help="Git ref (branch/tag)")
     optimize_parser.add_argument("--workflow", help="Workflow path to optimize")
     optimize_parser.add_argument("--out", help="Output file path for optimized YAML")
@@ -92,9 +92,9 @@ GitLab:  https://gitlab.com/gitlab-ai-hackathon/participants/34560917
     pr_parser = subparsers.add_parser("pr", help="Pull request operations")
     pr_subparsers = pr_parser.add_subparsers(dest="pr_command", help="PR commands")
 
-    pr_create_parser = pr_subparsers.add_parser("create", help="Create optimization pull request (GitHub)")
-    pr_create_parser.add_argument("--provider", default="github", choices=["github"], help="CI provider")
-    pr_create_parser.add_argument("--repo", help="Repository as owner/repo (auto-detected if omitted)")
+    pr_create_parser = pr_subparsers.add_parser("create", help="Create optimization pull request (GitHub/GitLab)")
+    pr_create_parser.add_argument("--provider", default="github", choices=["github", "gitlab"], help="CI provider")
+    pr_create_parser.add_argument("--repo", help="GitHub owner/repo (auto-detected) or GitLab project id/path")
     pr_create_parser.add_argument("--base", help="Base branch (defaults to repository default branch)")
     pr_create_parser.add_argument("--branch", default="ecoci/optimize-workflow", help="PR source branch")
     pr_create_parser.add_argument("--workflow", help="Workflow path to optimize and commit")
@@ -200,13 +200,35 @@ def cmd_security(args):
         print("   Also works with: .github/workflows/ci.yml, Jenkinsfile, etc.")
 
 
-def _resolve_repo(repo_arg: Optional[str]) -> str:
-    from ecoci.providers.github import GitHubProvider
+def _get_provider(provider_name: str):
+    if provider_name == "github":
+        from ecoci.providers.github import GitHubProvider
 
-    repo = repo_arg or GitHubProvider.infer_repo_from_git()
-    if not repo:
-        raise RuntimeError("Repository not provided and could not be inferred. Use --repo owner/repo")
-    return repo
+        return GitHubProvider()
+
+    if provider_name == "gitlab":
+        from ecoci.providers.gitlab import GitLabProvider
+
+        return GitLabProvider()
+
+    raise RuntimeError(f"Unsupported provider: {provider_name}")
+
+
+def _resolve_repo(repo_arg: Optional[str], provider_name: str) -> str:
+    if provider_name == "github":
+        from ecoci.providers.github import GitHubProvider
+
+        repo = repo_arg or GitHubProvider.infer_repo_from_git()
+        if not repo:
+            raise RuntimeError("Repository not provided and could not be inferred. Use --repo owner/repo")
+        return repo
+
+    if provider_name == "gitlab":
+        if not repo_arg:
+            raise RuntimeError("GitLab provider requires --repo <project_id_or_path>")
+        return repo_arg
+
+    raise RuntimeError(f"Unsupported provider: {provider_name}")
 
 
 def _pick_workflow(provider, repo: str, ref: str, workflow: Optional[str]) -> str:
@@ -214,20 +236,18 @@ def _pick_workflow(provider, repo: str, ref: str, workflow: Optional[str]) -> st
         return workflow
     workflows = provider.list_workflow_files(repo, ref)
     if not workflows:
-        raise RuntimeError(f"No GitHub workflow files found in {repo} at ref {ref}")
+        raise RuntimeError(f"No workflow files found in {repo} at ref {ref}")
     return workflows[0]
 
 
 def cmd_doctor(args):
-    from ecoci.providers.github import GitHubProvider
-
-    provider = GitHubProvider()
+    provider = _get_provider(args.provider)
     repo = None
     errors = []
     warnings = []
     checks = {
-        "provider": "github",
-        "token_present": bool(provider.token),
+        "provider": args.provider,
+        "token_present": bool(getattr(provider, "token", "")),
         "repo_detected": False,
         "repo": None,
         "workflow_count": 0,
@@ -235,14 +255,17 @@ def cmd_doctor(args):
     }
 
     try:
-        repo = _resolve_repo(args.repo)
+        repo = _resolve_repo(args.repo, args.provider)
         checks["repo_detected"] = True
         checks["repo"] = repo
     except Exception as e:
         errors.append(str(e))
 
-    if not provider.token:
-        warnings.append("GITHUB_TOKEN is not set. Read-only APIs may be rate-limited and PR creation will fail.")
+    if not getattr(provider, "token", ""):
+        if args.provider == "github":
+            warnings.append("GITHUB_TOKEN is not set. Read-only APIs may be rate-limited and PR creation will fail.")
+        else:
+            warnings.append("GITLAB_TOKEN is not set. API access and MR creation will fail.")
 
     if repo:
         try:
@@ -252,7 +275,7 @@ def cmd_doctor(args):
             if not workflows:
                 warnings.append(f"No workflows found at ref '{args.ref}' in {repo}")
         except Exception as e:
-            errors.append(f"GitHub API check failed: {e}")
+            errors.append(f"{args.provider} API check failed: {e}")
 
     result = {
         "ok": len(errors) == 0,
@@ -288,29 +311,35 @@ def cmd_doctor(args):
 
 
 def cmd_analyze(args):
-    from ecoci.providers.github import GitHubProvider
-
-    provider = GitHubProvider()
-    repo = _resolve_repo(args.repo)
+    provider = _get_provider(args.provider)
+    repo = _resolve_repo(args.repo, args.provider)
     workflow_path = _pick_workflow(provider, repo, args.ref, args.workflow)
     workflow_yaml = provider.get_workflow_content(repo, workflow_path, args.ref)
 
     run_jobs = None
-    if args.run_id:
+    if args.run_id and hasattr(provider, "get_run_jobs"):
         run_jobs = provider.get_run_jobs(repo, args.run_id)
 
     analysis = provider.analyze_workflow(workflow_yaml, run_jobs=run_jobs)
-    metrics = provider.compute_run_metrics(run_jobs or []) if run_jobs else None
-    optimization_preview = provider.optimize_workflow_with_metadata(workflow_yaml, workflow_path=workflow_path)
-    kpi_impact = provider.estimate_kpi_impact(optimization_preview.get("changes", []), metrics)
+    metrics = provider.compute_run_metrics(run_jobs or []) if (run_jobs and hasattr(provider, "compute_run_metrics")) else None
+    if hasattr(provider, "optimize_workflow_with_metadata"):
+        optimization_preview = provider.optimize_workflow_with_metadata(workflow_yaml, workflow_path=workflow_path)
+        opt_changes = optimization_preview.get("changes", [])
+    else:
+        _optimized, opt_changes = provider.optimize_workflow(workflow_yaml)
+    if hasattr(provider, "estimate_kpi_impact"):
+        kpi_impact = provider.estimate_kpi_impact(opt_changes, metrics)
+    else:
+        kpi_impact = None
     payload = {
-        "provider": "github",
+        "provider": args.provider,
         "repo": repo,
         "ref": args.ref,
         "workflow": workflow_path,
         "analysis": analysis,
-        "kpi_impact": kpi_impact,
     }
+    if kpi_impact:
+        payload["kpi_impact"] = kpi_impact
     if metrics:
         payload["metrics"] = metrics
 
@@ -376,7 +405,7 @@ def cmd_analyze(args):
         lines = [
             "# EcoCI Analysis Report",
             "",
-            f"- Provider: github",
+            f"- Provider: {args.provider}",
             f"- Repo: {repo}",
             f"- Workflow: {workflow_path}",
             "",
@@ -445,10 +474,8 @@ def cmd_analyze(args):
 
 
 def cmd_optimize(args):
-    from ecoci.providers.github import GitHubProvider
-
-    provider = GitHubProvider()
-    repo = _resolve_repo(args.repo)
+    provider = _get_provider(args.provider)
+    repo = _resolve_repo(args.repo, args.provider)
     workflow_path = _pick_workflow(provider, repo, args.ref, args.workflow)
     workflow_yaml = provider.get_workflow_content(repo, workflow_path, args.ref)
 
@@ -464,7 +491,7 @@ def cmd_optimize(args):
         diff_text = ""
 
     payload = {
-        "provider": "github",
+        "provider": args.provider,
         "repo": repo,
         "ref": args.ref,
         "workflow": workflow_path,
@@ -525,15 +552,20 @@ def cmd_pr(args):
     if args.pr_command != "create":
         raise RuntimeError(f"Unsupported pr command: {args.pr_command}")
 
-    from ecoci.providers.github import GitHubProvider
+    provider = _get_provider(args.provider)
+    repo = _resolve_repo(args.repo, args.provider)
 
-    provider = GitHubProvider()
-    repo = _resolve_repo(args.repo)
+    if not getattr(provider, "token", "") and not args.dry_run:
+        if args.provider == "github":
+            raise RuntimeError("GITHUB_TOKEN is required for `ecoci pr create`. Set it and retry.")
+        raise RuntimeError("GITLAB_TOKEN is required for `ecoci pr create --provider gitlab`. Set it and retry.")
 
-    if not provider.token and not args.dry_run:
-        raise RuntimeError("GITHUB_TOKEN is required for `ecoci pr create`. Set it and retry.")
-
-    base_branch = args.base or provider.get_default_branch(repo)
+    if hasattr(provider, "get_default_branch"):
+        base_branch = args.base or provider.get_default_branch(repo)
+    elif hasattr(provider, "client"):
+        base_branch = args.base or provider.client.get_default_branch(repo)
+    else:
+        base_branch = args.base or "main"
     workflow_path = _pick_workflow(provider, repo, base_branch, args.workflow)
     workflow_yaml = provider.get_workflow_content(repo, workflow_path, base_branch)
     if hasattr(provider, "optimize_workflow_with_metadata"):
@@ -548,7 +580,7 @@ def cmd_pr(args):
         diff_text = ""
 
     metrics = None
-    if args.run_id:
+    if args.run_id and hasattr(provider, "get_run_jobs") and hasattr(provider, "compute_run_metrics"):
         jobs = provider.get_run_jobs(repo, args.run_id)
         metrics = provider.compute_run_metrics(jobs)
 
@@ -618,7 +650,7 @@ def cmd_pr(args):
 
     if args.dry_run:
         payload = {
-            "provider": "github",
+            "provider": args.provider,
             "repo": repo,
             "base": base_branch,
             "branch": args.branch,
@@ -651,7 +683,7 @@ def cmd_pr(args):
         commit_message=args.commit_message,
     )
 
-    if args.run_id and metrics:
+    if args.provider == "github" and args.run_id and metrics and hasattr(provider, "build_dashboard_markdown"):
         pr_number = result.get("pull_request", {}).get("number")
         if pr_number:
             dashboard = provider.build_dashboard_markdown(repo, workflow_path, args.run_id, metrics)
@@ -671,7 +703,8 @@ def cmd_pr(args):
     print(f"  Workflow:  {workflow_path}")
     print(f"  Base:      {base_branch}")
     print(f"  Branch:    {args.branch}")
-    print(f"  URL:       {pr.get('html_url', 'N/A')}")
+    pr_url = pr.get("html_url") or pr.get("web_url") or "N/A"
+    print(f"  URL:       {pr_url}")
 
 
 def cmd_cost(args):
