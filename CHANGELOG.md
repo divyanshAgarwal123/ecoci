@@ -32,6 +32,8 @@ All notable changes to this project are documented in this file.
 - Added created-PR result panel with direct link and metrics summary when available.
 - Added GitLab pipeline metrics support in CLI `analyze --run-id` flow.
 - Added GitLab run metrics model output (duration/cost/energy/CO2) for provider parity.
+- Added GitLab project-path API compatibility (namespace/project identifiers) across client operations.
+- Added GitLab repo auto-inference from git remote for provider commands.
 
 ### Changed
 - Run metric estimation now uses runner metadata heuristics (estimated core count + OS multiplier) for improved energy realism.

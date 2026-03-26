@@ -260,6 +260,9 @@ ecoci analyze --provider gitlab --repo 34560917 --json
 ecoci analyze --provider gitlab --repo 34560917 --run-id <pipeline_id> --markdown ecoci-gitlab-report.md
 ecoci optimize --provider gitlab --repo 34560917 --show-diff
 ecoci pr create --provider gitlab --repo 34560917 --dry-run --json
+
+# GitLab auto-detect from git remote (if origin is gitlab.com/group/project)
+ecoci doctor --provider gitlab
 ```
 
 Phase 2.0 enhancements now included in CLI output:

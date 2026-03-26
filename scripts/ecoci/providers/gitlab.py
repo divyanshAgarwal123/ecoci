@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import re
+import subprocess
 from typing import Any, Dict, List, Optional, Tuple
 
 from ..ci_analyzer import analyze_ci_config
@@ -16,6 +18,21 @@ class GitLabProvider(CIProvider):
     def __init__(self):
         self.client = GitLabClient(load_config())
         self.token = self.client.config.token
+
+    @staticmethod
+    def infer_project_from_git() -> Optional[str]:
+        """Infer GitLab namespace/project from git remote origin URL."""
+        try:
+            out = subprocess.check_output(["git", "config", "--get", "remote.origin.url"], text=True).strip()
+        except Exception:
+            return None
+
+        # https://gitlab.com/group/subgroup/repo.git OR git@gitlab.com:group/repo.git
+        m = re.search(r"gitlab\.com[:/](?P<path>.+?)(?:\.git)?$", out)
+        if not m:
+            return None
+        path = m.group("path").strip("/")
+        return path or None
 
     def get_default_branch(self, repo: str) -> str:
         return self.client.get_default_branch(repo)

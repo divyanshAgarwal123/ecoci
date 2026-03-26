@@ -169,3 +169,9 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
 - Added GitLab pipeline job retrieval for `--run-id` flows (`run-id` as pipeline id).
 - Added GitLab run metrics computation (duration, cost, energy, CO2) parity.
 - Enabled provider-agnostic metric reporting path in analysis for GitHub and GitLab.
+
+### Phase 5.3 (Current increment)
+
+- Added GitLab project path compatibility (`group/subgroup/project`) across API calls.
+- Added GitLab repo auto-detection from git remote for provider workflows.
+- Improved docs/examples for path-based project identifiers and detection behavior.

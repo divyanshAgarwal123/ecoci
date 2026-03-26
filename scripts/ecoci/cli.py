@@ -224,9 +224,15 @@ def _resolve_repo(repo_arg: Optional[str], provider_name: str) -> str:
         return repo
 
     if provider_name == "gitlab":
-        if not repo_arg:
-            raise RuntimeError("GitLab provider requires --repo <project_id_or_path>")
-        return repo_arg
+        if repo_arg:
+            return repo_arg
+
+        from ecoci.providers.gitlab import GitLabProvider
+
+        inferred = GitLabProvider.infer_project_from_git()
+        if not inferred:
+            raise RuntimeError("GitLab repo not provided and could not be inferred. Use --repo <project_id_or_path>")
+        return inferred
 
     raise RuntimeError(f"Unsupported provider: {provider_name}")
 

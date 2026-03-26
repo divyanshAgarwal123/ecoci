@@ -14,6 +14,10 @@ from .config import EcoCIConfig
 class GitLabClient:
     config: EcoCIConfig
 
+    @staticmethod
+    def _project_ref(project_id: str) -> str:
+        return requests.utils.quote(str(project_id), safe="")
+
     def _headers(self) -> Dict[str, str]:
         return {
             "PRIVATE-TOKEN": self.config.token,
@@ -29,20 +33,20 @@ class GitLabClient:
         return None
 
     def get_project(self, project_id: str) -> Dict[str, Any]:
-        return self._request("GET", f"/projects/{project_id}")
+        return self._request("GET", f"/projects/{self._project_ref(project_id)}")
 
     def get_pipeline(self, project_id: str, pipeline_id: str) -> Dict[str, Any]:
-        return self._request("GET", f"/projects/{project_id}/pipelines/{pipeline_id}")
+        return self._request("GET", f"/projects/{self._project_ref(project_id)}/pipelines/{pipeline_id}")
 
     def list_pipeline_jobs(self, project_id: str, pipeline_id: str) -> List[Dict[str, Any]]:
-        return self._request("GET", f"/projects/{project_id}/pipelines/{pipeline_id}/jobs")
+        return self._request("GET", f"/projects/{self._project_ref(project_id)}/pipelines/{pipeline_id}/jobs")
 
     def get_job(self, project_id: str, job_id: str) -> Dict[str, Any]:
-        return self._request("GET", f"/projects/{project_id}/jobs/{job_id}")
+        return self._request("GET", f"/projects/{self._project_ref(project_id)}/jobs/{job_id}")
 
     def get_repository_file(self, project_id: str, file_path: str, ref: str) -> str:
         encoded_path = requests.utils.quote(file_path, safe="")
-        payload = self._request("GET", f"/projects/{project_id}/repository/files/{encoded_path}", params={"ref": ref})
+        payload = self._request("GET", f"/projects/{self._project_ref(project_id)}/repository/files/{encoded_path}", params={"ref": ref})
         content = base64.b64decode(payload["content"]).decode("utf-8")
         return content
 
@@ -52,7 +56,7 @@ class GitLabClient:
             "commit_message": commit_message,
             "actions": actions,
         }
-        return self._request("POST", f"/projects/{project_id}/repository/commits", json_body=body)
+        return self._request("POST", f"/projects/{self._project_ref(project_id)}/repository/commits", json_body=body)
 
     def create_merge_request(
         self,
@@ -73,14 +77,14 @@ class GitLabClient:
         }
         if labels:
             body["labels"] = ",".join(labels)
-        return self._request("POST", f"/projects/{project_id}/merge_requests", json_body=body)
+        return self._request("POST", f"/projects/{self._project_ref(project_id)}/merge_requests", json_body=body)
 
     def create_merge_request_note(self, project_id: str, mr_iid: str, body: str) -> Dict[str, Any]:
         payload = {"body": body}
-        return self._request("POST", f"/projects/{project_id}/merge_requests/{mr_iid}/notes", json_body=payload)
+        return self._request("POST", f"/projects/{self._project_ref(project_id)}/merge_requests/{mr_iid}/notes", json_body=payload)
 
     def create_branch(self, project_id: str, branch: str, ref: str) -> Dict[str, Any]:
-        return self._request("POST", f"/projects/{project_id}/repository/branches", params={"branch": branch, "ref": ref})
+        return self._request("POST", f"/projects/{self._project_ref(project_id)}/repository/branches", params={"branch": branch, "ref": ref})
 
     def get_default_branch(self, project_id: str) -> str:
         project = self.get_project(project_id)
