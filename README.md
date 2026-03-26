@@ -257,6 +257,7 @@ ecoci doctor --provider github
 # GitLab project support (project id or path required)
 ecoci doctor --provider gitlab --repo 34560917
 ecoci analyze --provider gitlab --repo 34560917 --json
+ecoci analyze --provider gitlab --repo 34560917 --run-id <pipeline_id> --markdown ecoci-gitlab-report.md
 ecoci optimize --provider gitlab --repo 34560917 --show-diff
 ecoci pr create --provider gitlab --repo 34560917 --dry-run --json
 ```

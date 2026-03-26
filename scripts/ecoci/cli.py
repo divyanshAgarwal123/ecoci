@@ -65,7 +65,7 @@ GitLab:  https://gitlab.com/gitlab-ai-hackathon/participants/34560917
     analyze_parser.add_argument("--repo", help="GitHub owner/repo (auto-detected) or GitLab project id/path")
     analyze_parser.add_argument("--ref", default="main", help="Git ref (branch/tag) for reading workflow files")
     analyze_parser.add_argument("--workflow", help="Workflow path (e.g., .github/workflows/test.yml). Defaults to first found.")
-    analyze_parser.add_argument("--run-id", type=int, help="Run ID for provider metrics (GitHub currently supported)")
+    analyze_parser.add_argument("--run-id", type=int, help="Run ID for provider metrics (GitHub run id or GitLab pipeline id)")
     analyze_parser.add_argument("--json", action="store_true", help="Output JSON")
     analyze_parser.add_argument("--markdown", help="Write markdown report to file")
 

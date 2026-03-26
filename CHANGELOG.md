@@ -30,6 +30,8 @@ All notable changes to this project are documented in this file.
 - Added inline workflow diff preview rendering in VS Code dashboard Optimize action.
 - Added one-click PR creation in VS Code dashboard with optional title/run-id inputs.
 - Added created-PR result panel with direct link and metrics summary when available.
+- Added GitLab pipeline metrics support in CLI `analyze --run-id` flow.
+- Added GitLab run metrics model output (duration/cost/energy/CO2) for provider parity.
 
 ### Changed
 - Run metric estimation now uses runner metadata heuristics (estimated core count + OS multiplier) for improved energy realism.

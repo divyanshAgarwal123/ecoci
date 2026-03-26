@@ -43,6 +43,63 @@ class GitLabProvider(CIProvider):
             "dag_summary": analysis.get("dag_summary", {}),
         }
 
+    def get_run_jobs(self, repo: str, run_id: int) -> List[Dict[str, Any]]:
+        """Fetch GitLab pipeline jobs for a given pipeline ID."""
+        return self.client.list_pipeline_jobs(repo, str(run_id))
+
+    def compute_run_metrics(
+        self,
+        jobs: List[Dict[str, Any]],
+        carbon_intensity_kg_per_kwh: Optional[float] = None,
+        runner_cpu_cores: Optional[int] = None,
+        kwh_per_core_hour: Optional[float] = None,
+        runner_cost_per_minute_usd: float = 0.008,
+    ) -> Dict[str, Any]:
+        """Compute speed/cost/carbon metrics from GitLab pipeline job durations."""
+        carbon_intensity = carbon_intensity_kg_per_kwh or self.client.config.carbon_intensity_kg_per_kwh
+        cpu_cores = runner_cpu_cores or self.client.config.runner_cpu_cores
+        core_kwh_hour = kwh_per_core_hour or self.client.config.kwh_per_core_hour
+
+        total_duration = 0.0
+        total_kwh = 0.0
+        total_cost = 0.0
+        kwh_per_core_second = core_kwh_hour / 3600.0
+        by_job: List[Dict[str, Any]] = []
+
+        for j in jobs:
+            sec = float(j.get("duration") or 0.0)
+            total_duration += sec
+            kwh = sec * cpu_cores * kwh_per_core_second
+            cost = (sec / 60.0) * runner_cost_per_minute_usd
+            total_kwh += kwh
+            total_cost += cost
+            by_job.append(
+                {
+                    "id": j.get("id"),
+                    "name": j.get("name"),
+                    "status": j.get("status"),
+                    "duration_seconds": round(sec, 2),
+                    "kwh": round(kwh, 4),
+                    "co2_kg": round(kwh * carbon_intensity, 4),
+                    "cost_usd": round(cost, 4),
+                }
+            )
+
+        return {
+            "total_duration_seconds": round(total_duration, 2),
+            "total_kwh": round(total_kwh, 4),
+            "total_co2_kg": round(total_kwh * carbon_intensity, 4),
+            "total_cost_usd": round(total_cost, 4),
+            "by_job": by_job,
+            "assumptions": {
+                "runner_cpu_cores": cpu_cores,
+                "kwh_per_core_hour": core_kwh_hour,
+                "carbon_intensity_kg_per_kwh": carbon_intensity,
+                "runner_cost_per_minute_usd": runner_cost_per_minute_usd,
+                "source": "GitLab pipeline job durations",
+            },
+        }
+
     def optimize_workflow(self, workflow_yaml: str) -> Tuple[str, List[str]]:
         optimized, changes, _warnings = optimize_ci_yaml(workflow_yaml)
         return optimized, changes
