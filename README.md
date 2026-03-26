@@ -321,6 +321,7 @@ Dashboard UX (Phase 2.2):
 - PR dry-run preview surfaced directly in dashboard panel
 - Provider selector for GitHub/GitLab execution paths
 - Inline diff preview in Optimize dashboard flow
+- One-click PR creation from dashboard with optional title/run-id fields
 
 ### E) Product roadmap + website scaffold
 

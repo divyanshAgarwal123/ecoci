@@ -64,6 +64,8 @@ class EcoCIDashboardViewProvider {
 
       const provider = msg.provider === 'gitlab' ? 'gitlab' : 'github';
       const repo = (msg.repo || '').trim();
+      const title = (msg.title || '').trim();
+      const runId = Number.parseInt(String(msg.runId || ''), 10);
       const providerArgs = [`--provider ${provider}`];
       if (repo) {
         providerArgs.push(`--repo ${shellEscapeArg(repo)}`);
@@ -115,7 +117,9 @@ class EcoCIDashboardViewProvider {
         }
 
         if (msg.command === 'pr') {
-          const out = await runEcoci(`ecoci pr create ${providerArgStr} --dry-run --json`, cwd);
+          const titleArg = title ? ` --title ${shellEscapeArg(title)}` : '';
+          const runIdArg = Number.isFinite(runId) ? ` --run-id ${runId}` : '';
+          const out = await runEcoci(`ecoci pr create ${providerArgStr}${titleArg}${runIdArg} --dry-run --json`, cwd);
           const parsed = JSON.parse(out);
           webview.postMessage({
             type: 'pr',
@@ -127,6 +131,26 @@ class EcoCIDashboardViewProvider {
               base: parsed.base || 'N/A',
               branch: parsed.branch || 'N/A',
               changeCount: (parsed.changes || []).length,
+            },
+          });
+          return;
+        }
+
+        if (msg.command === 'pr-create') {
+          const titleArg = title ? ` --title ${shellEscapeArg(title)}` : '';
+          const runIdArg = Number.isFinite(runId) ? ` --run-id ${runId}` : '';
+          const out = await runEcoci(`ecoci pr create ${providerArgStr}${titleArg}${runIdArg} --json`, cwd);
+          const parsed = JSON.parse(out);
+          const pr = parsed.pull_request || {};
+          webview.postMessage({
+            type: 'pr-created',
+            data: {
+              provider,
+              repo,
+              url: pr.html_url || pr.web_url || 'N/A',
+              number: pr.number || pr.iid || 'N/A',
+              title: pr.title || title || 'N/A',
+              metrics: parsed.metrics || null,
             },
           });
           return;
@@ -185,9 +209,14 @@ class EcoCIDashboardViewProvider {
     <input id="repo" placeholder="owner/repo or gitlab project id/path (optional)" />
   </div>
   <div class="row">
+    <input id="prTitle" placeholder="PR title (optional)" />
+    <input id="runId" placeholder="Run ID (optional)" />
+  </div>
+  <div class="row">
     <button id="analyze">Analyze</button>
     <button id="optimize">Optimize</button>
     <button id="pr">PR Dry Run</button>
+    <button id="prCreate">Create PR</button>
   </div>
   <div id="content" class="card">
     <div>Run an action to populate CI insights.</div>
@@ -199,6 +228,8 @@ class EcoCIDashboardViewProvider {
     const content = document.getElementById('content');
     const providerEl = document.getElementById('provider');
     const repoEl = document.getElementById('repo');
+    const prTitleEl = document.getElementById('prTitle');
+    const runIdEl = document.getElementById('runId');
 
     const esc = (v) => String(v)
       .replaceAll('&', '&amp;')
@@ -210,6 +241,8 @@ class EcoCIDashboardViewProvider {
         command,
         provider: providerEl.value,
         repo: repoEl.value,
+        title: prTitleEl.value,
+        runId: runIdEl.value,
       });
     };
 
@@ -221,6 +254,9 @@ class EcoCIDashboardViewProvider {
     });
     document.getElementById('pr').addEventListener('click', () => {
       post('pr');
+    });
+    document.getElementById('prCreate').addEventListener('click', () => {
+      post('pr-create');
     });
 
     window.addEventListener('message', event => {
@@ -267,6 +303,25 @@ class EcoCIDashboardViewProvider {
           '<div><strong>Base → Branch:</strong> ' + esc(d.base) + ' → ' + esc(d.branch) + '</div>' +
           '<div><strong>Planned Changes:</strong> ' + esc(d.changeCount) + '</div>' +
           '<div class="muted">Dry-run only. No commit or PR created.</div>';
+        return;
+      }
+      if (msg.type === 'pr-created') {
+        const d = msg.data;
+        const metrics = d.metrics
+          ? ('<div class="muted">Duration: ' + esc(d.metrics.total_duration_seconds || 'N/A') +
+            's • Cost: $' + esc(d.metrics.total_cost_usd || 'N/A') +
+            ' • CO2: ' + esc(d.metrics.total_co2_kg || 'N/A') + ' kg</div>')
+          : '';
+        const urlHtml = d.url && d.url !== 'N/A'
+          ? '<a href="' + esc(d.url) + '">Open PR</a>'
+          : 'N/A';
+        content.innerHTML =
+          '<div><strong>Provider:</strong> ' + esc(d.provider) + '</div>' +
+          '<div><strong>Repo:</strong> ' + esc(d.repo || 'N/A') + '</div>' +
+          '<div><strong>PR:</strong> #' + esc(d.number) + ' ' + esc(d.title) + '</div>' +
+          '<div><strong>URL:</strong> ' + urlHtml + '</div>' +
+          metrics +
+          '<div class="muted">PR created successfully.</div>';
       }
     });
   </script>

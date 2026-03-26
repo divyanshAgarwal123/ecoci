@@ -108,6 +108,12 @@ EcoCI becomes a developer-facing CI optimization product with three install surf
 - Added inline diff preview rendering in dashboard Optimize action.
 - Added provider-aware Analyze/Optimize/PR dry-run execution from dashboard.
 
+### Phase 3.2 (Current increment)
+
+- Added one-click **Create PR** action directly from dashboard.
+- Added optional dashboard fields for PR title and run-id.
+- Added success state rendering with created PR link and key run metrics (when available).
+
 ---
 
 ## Phase 4: Website + distribution

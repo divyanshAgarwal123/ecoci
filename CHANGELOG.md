@@ -28,6 +28,8 @@ All notable changes to this project are documented in this file.
 - Added provider-aware repo resolution and token guidance (`GITHUB_TOKEN` / `GITLAB_TOKEN`).
 - Added VS Code dashboard provider selector for `github` and `gitlab` execution paths.
 - Added inline workflow diff preview rendering in VS Code dashboard Optimize action.
+- Added one-click PR creation in VS Code dashboard with optional title/run-id inputs.
+- Added created-PR result panel with direct link and metrics summary when available.
 
 ### Changed
 - Run metric estimation now uses runner metadata heuristics (estimated core count + OS multiplier) for improved energy realism.
